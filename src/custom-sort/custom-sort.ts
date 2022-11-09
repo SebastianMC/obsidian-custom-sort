@@ -14,6 +14,12 @@ let Collator = new Intl.Collator(undefined, {
 	numeric: true,
 }).compare;
 
+let CollatorTrueAlphabetical = new Intl.Collator(undefined, {
+	usage: "sort",
+	sensitivity: "base",
+	numeric: false,
+}).compare;
+
 export interface FolderItemForSorting {
 	path: string
 	groupIdx?: number  // the index itself represents order for groups
@@ -31,7 +37,9 @@ export type SorterFn = (a: FolderItemForSorting, b: FolderItemForSorting) => num
 
 export let Sorters: { [key in CustomSortOrder]: SorterFn } = {
 	[CustomSortOrder.alphabetical]: (a: FolderItemForSorting, b: FolderItemForSorting) => Collator(a.sortString, b.sortString),
+	[CustomSortOrder.trueAlphabetical]: (a: FolderItemForSorting, b: FolderItemForSorting) => CollatorTrueAlphabetical(a.sortString, b.sortString),
 	[CustomSortOrder.alphabeticalReverse]: (a: FolderItemForSorting, b: FolderItemForSorting) => Collator(b.sortString, a.sortString),
+	[CustomSortOrder.trueAlphabeticalReverse]: (a: FolderItemForSorting, b: FolderItemForSorting) => CollatorTrueAlphabetical(b.sortString, a.sortString),
 	[CustomSortOrder.byModifiedTime]: (a: FolderItemForSorting, b: FolderItemForSorting) => (a.isFolder && b.isFolder) ? Collator(a.sortString, b.sortString) : (a.mtime - b.mtime),
 	[CustomSortOrder.byModifiedTimeAdvanced]: (a: FolderItemForSorting, b: FolderItemForSorting) => a.mtime - b.mtime,
 	[CustomSortOrder.byModifiedTimeReverse]: (a: FolderItemForSorting, b: FolderItemForSorting) => (a.isFolder && b.isFolder) ? Collator(a.sortString, b.sortString) : (b.mtime - a.mtime),
