@@ -469,8 +469,8 @@ sorting-spec: |
     target-folder: Remarks from 'The Little Prince' book
     with-metadata: Pages
      < a-z by-metadata: Pages
-	...
-	 > modified
+    ...
+     > modified
 ---
 ```
 
