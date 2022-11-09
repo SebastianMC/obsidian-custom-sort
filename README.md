@@ -37,6 +37,7 @@ Take full control of the order of your notes and folders:
   - [Example 12: Apply same sorting to all folders in the vault](#example-12-apply-same-sorting-to-all-folders-in-the-vault)
   - [Example 13: Sorting rules inheritance by subfolders](#example-13-sorting-rules-inheritance-by-subfolders)
   - [Example 14: Grouping and sorting by metadata value](#example-14-grouping-and-sorting-by-metadata-value)
+- [Alphabetical, Natural and True Alphabetical sorting orders](#alphabetical-natural-and-true-alphabetical-sorting-orders)
 - [Location of sorting specification YAML entry](#location-of-sorting-specification-yaml-entry) 
 - [Ribbon icon](#ribbon-icon)
 - [Installing the plugin](#installing-the-plugin)
