@@ -798,6 +798,7 @@ export class SortingSpecProcessor {
 		for (let group of spec.groups) {
 			if (!group.order) {
 				group.order = spec.defaultOrder ?? DEFAULT_SORT_ORDER
+				group.byMetadataField = spec.byMetadataField
 			}
 		}
 
@@ -844,13 +845,16 @@ export class SortingSpecProcessor {
 		let attr: CustomSortOrderAscDescPair | null = orderLiteral ? OrderLiterals[orderLiteral.toLowerCase()] : null
 		if (attr) {
 			if (applyToMetadata &&
-				(attr.asc === CustomSortOrder.alphabetical || attr.desc === CustomSortOrder.alphabeticalReverse)) {
+				(attr.asc === CustomSortOrder.alphabetical || attr.desc === CustomSortOrder.alphabeticalReverse ||
+				 attr.asc === CustomSortOrder.trueAlphabetical || attr.desc === CustomSortOrder.trueAlphabeticalReverse )) {
+
+				const trueAlphabetical: boolean = attr.asc === CustomSortOrder.trueAlphabetical || attr.desc === CustomSortOrder.trueAlphabeticalReverse
 
 				// Create adjusted copy
 				attr = {
 					...attr,
-					asc: CustomSortOrder.byMetadataFieldAlphabetical,
-					desc: CustomSortOrder.byMetadataFieldAlphabeticalReverse
+					asc: trueAlphabetical ? CustomSortOrder.byMetadataFieldTrueAlphabetical : CustomSortOrder.byMetadataFieldAlphabetical,
+					desc: trueAlphabetical ? CustomSortOrder.byMetadataFieldTrueAlphabeticalReverse : CustomSortOrder.byMetadataFieldAlphabeticalReverse
 				}
 			} else {    // For orders different from alphabetical (and reverse) a reference to metadata is not supported
 				metadataSpec.applyToMetadataField = undefined

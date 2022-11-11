@@ -469,30 +469,54 @@ describe('SortingSpecProcessor', () => {
 })
 
 const txtInputTrueAlphabeticalSortAttr: string = `
-target-folder: AAA
+target-folder: True Alpha
 < true a-z
-target-folder: BBB
+target-folder: True Alpha Rev
 > true a-z
+target-folder: by-meta True Alpha
+< true a-z by-metadata:
+target-folder: by-meta True Alpha Rev
+> true a-z by-metadata: Some-attr
 `
 
 const expectedSortSpecForTrueAlphabeticalSorting: { [key: string]: CustomSortSpec } = {
-	"AAA": {
+	"True Alpha": {
 		defaultOrder: CustomSortOrder.trueAlphabetical,
 		groups: [{
 			order: CustomSortOrder.trueAlphabetical,
 			type: CustomSortGroupType.Outsiders
 		}],
 		outsidersGroupIdx: 0,
-		targetFoldersPaths: ['AAA']
+		targetFoldersPaths: ['True Alpha']
 	},
-	"BBB": {
+	"True Alpha Rev": {
 		defaultOrder: CustomSortOrder.trueAlphabeticalReverse,
 		groups: [{
 			order: CustomSortOrder.trueAlphabeticalReverse,
 			type: CustomSortGroupType.Outsiders
 		}],
 		outsidersGroupIdx: 0,
-		targetFoldersPaths: ['BBB']
+		targetFoldersPaths: ['True Alpha Rev']
+	},
+	"by-meta True Alpha": {
+		defaultOrder: CustomSortOrder.byMetadataFieldTrueAlphabetical,
+		groups: [{
+			order: CustomSortOrder.byMetadataFieldTrueAlphabetical,
+			type: CustomSortGroupType.Outsiders
+		}],
+		outsidersGroupIdx: 0,
+		targetFoldersPaths: ['by-meta True Alpha']
+	},
+	"by-meta True Alpha Rev": {
+		defaultOrder: CustomSortOrder.byMetadataFieldTrueAlphabeticalReverse,
+		byMetadataField: 'Some-attr',
+		groups: [{
+			order: CustomSortOrder.byMetadataFieldTrueAlphabeticalReverse,
+			byMetadataField: 'Some-attr',
+			type: CustomSortGroupType.Outsiders
+		}],
+		outsidersGroupIdx: 0,
+		targetFoldersPaths: ['by-meta True Alpha Rev']
 	}
 }
 

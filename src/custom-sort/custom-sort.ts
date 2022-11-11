@@ -8,13 +8,13 @@ import {
 } from "./custom-sort-types";
 import {isDefined} from "../utils/utils";
 
-let Collator = new Intl.Collator(undefined, {
+let CollatorCompare = new Intl.Collator(undefined, {
 	usage: "sort",
 	sensitivity: "base",
 	numeric: true,
 }).compare;
 
-let CollatorTrueAlphabetical = new Intl.Collator(undefined, {
+let CollatorTrueAlphabeticalCompare = new Intl.Collator(undefined, {
 	usage: "sort",
 	sensitivity: "base",
 	numeric: false,
@@ -34,55 +34,56 @@ export interface FolderItemForSorting {
 }
 
 export type SorterFn = (a: FolderItemForSorting, b: FolderItemForSorting) => number
+export type CollatorCompareFn = (a: string, b: string) => number
+
+// Syntax sugar
+const TrueAlphabetical: boolean = true
+const ReverseOrder: boolean = true
+const StraightOrder: boolean = false
+
+const sorterByMetadataField:(reverseOrder?: boolean, trueAlphabetical?: boolean) => SorterFn = (reverseOrder: boolean, trueAlphabetical?: boolean) => {
+	const collatorCompareFn: CollatorCompareFn = trueAlphabetical ? CollatorTrueAlphabeticalCompare : CollatorCompare
+	return (a: FolderItemForSorting, b: FolderItemForSorting) => {
+		if (reverseOrder) {
+			[a, b] = [b, a]
+		}
+		if (a.metadataFieldValue && b.metadataFieldValue) {
+			const sortResult: number = collatorCompareFn(a.metadataFieldValue, b.metadataFieldValue)
+			if (sortResult === 0) {
+				// Fallback -> requested sort by metadata and both items have the same metadata value
+				return collatorCompareFn(a.sortString, b.sortString)    // switch to alphabetical sort by note/folder titles
+			} else {
+				return sortResult
+			}
+		}
+		// Item with metadata goes before the w/o metadata
+		if (a.metadataFieldValue) return reverseOrder ? 1 : -1
+		if (b.metadataFieldValue) return reverseOrder ? -1 : 1
+		// Fallback -> requested sort by metadata, yet none of two items contain it, use alphabetical by name
+		return collatorCompareFn(a.sortString, b.sortString)
+	}
+}
 
 export let Sorters: { [key in CustomSortOrder]: SorterFn } = {
-	[CustomSortOrder.alphabetical]: (a: FolderItemForSorting, b: FolderItemForSorting) => Collator(a.sortString, b.sortString),
-	[CustomSortOrder.trueAlphabetical]: (a: FolderItemForSorting, b: FolderItemForSorting) => CollatorTrueAlphabetical(a.sortString, b.sortString),
-	[CustomSortOrder.alphabeticalReverse]: (a: FolderItemForSorting, b: FolderItemForSorting) => Collator(b.sortString, a.sortString),
-	[CustomSortOrder.trueAlphabeticalReverse]: (a: FolderItemForSorting, b: FolderItemForSorting) => CollatorTrueAlphabetical(b.sortString, a.sortString),
-	[CustomSortOrder.byModifiedTime]: (a: FolderItemForSorting, b: FolderItemForSorting) => (a.isFolder && b.isFolder) ? Collator(a.sortString, b.sortString) : (a.mtime - b.mtime),
+	[CustomSortOrder.alphabetical]: (a: FolderItemForSorting, b: FolderItemForSorting) => CollatorCompare(a.sortString, b.sortString),
+	[CustomSortOrder.trueAlphabetical]: (a: FolderItemForSorting, b: FolderItemForSorting) => CollatorTrueAlphabeticalCompare(a.sortString, b.sortString),
+	[CustomSortOrder.alphabeticalReverse]: (a: FolderItemForSorting, b: FolderItemForSorting) => CollatorCompare(b.sortString, a.sortString),
+	[CustomSortOrder.trueAlphabeticalReverse]: (a: FolderItemForSorting, b: FolderItemForSorting) => CollatorTrueAlphabeticalCompare(b.sortString, a.sortString),
+	[CustomSortOrder.byModifiedTime]: (a: FolderItemForSorting, b: FolderItemForSorting) => (a.isFolder && b.isFolder) ? CollatorCompare(a.sortString, b.sortString) : (a.mtime - b.mtime),
 	[CustomSortOrder.byModifiedTimeAdvanced]: (a: FolderItemForSorting, b: FolderItemForSorting) => a.mtime - b.mtime,
-	[CustomSortOrder.byModifiedTimeReverse]: (a: FolderItemForSorting, b: FolderItemForSorting) => (a.isFolder && b.isFolder) ? Collator(a.sortString, b.sortString) : (b.mtime - a.mtime),
+	[CustomSortOrder.byModifiedTimeReverse]: (a: FolderItemForSorting, b: FolderItemForSorting) => (a.isFolder && b.isFolder) ? CollatorCompare(a.sortString, b.sortString) : (b.mtime - a.mtime),
 	[CustomSortOrder.byModifiedTimeReverseAdvanced]: (a: FolderItemForSorting, b: FolderItemForSorting) => b.mtime - a.mtime,
-	[CustomSortOrder.byCreatedTime]: (a: FolderItemForSorting, b: FolderItemForSorting) => (a.isFolder && b.isFolder) ? Collator(a.sortString, b.sortString) : (a.ctimeNewest - b.ctimeNewest),
+	[CustomSortOrder.byCreatedTime]: (a: FolderItemForSorting, b: FolderItemForSorting) => (a.isFolder && b.isFolder) ? CollatorCompare(a.sortString, b.sortString) : (a.ctimeNewest - b.ctimeNewest),
 	[CustomSortOrder.byCreatedTimeAdvanced]: (a: FolderItemForSorting, b: FolderItemForSorting) => a.ctimeNewest - b.ctimeNewest,
-	[CustomSortOrder.byCreatedTimeReverse]: (a: FolderItemForSorting, b: FolderItemForSorting) => (a.isFolder && b.isFolder) ? Collator(a.sortString, b.sortString) : (b.ctimeOldest - a.ctimeOldest),
+	[CustomSortOrder.byCreatedTimeReverse]: (a: FolderItemForSorting, b: FolderItemForSorting) => (a.isFolder && b.isFolder) ? CollatorCompare(a.sortString, b.sortString) : (b.ctimeOldest - a.ctimeOldest),
 	[CustomSortOrder.byCreatedTimeReverseAdvanced]: (a: FolderItemForSorting, b: FolderItemForSorting) => b.ctimeOldest - a.ctimeOldest,
-	[CustomSortOrder.byMetadataFieldAlphabetical]: (a: FolderItemForSorting, b: FolderItemForSorting) => {
-		if (a.metadataFieldValue && b.metadataFieldValue) {
-			const sortResult: number = Collator(a.metadataFieldValue, b.metadataFieldValue)
-			if (sortResult === 0) {
-				// Fallback -> requested sort by metadata and both items have the same metadata value
-				return Collator(a.sortString, b.sortString)    // switch to alphabetical sort by note/folder titles
-			} else {
-				return sortResult
-			}
-		}
-		// Item with metadata goes before the w/o metadata
-		if (a.metadataFieldValue) return -1
-		if (b.metadataFieldValue) return 1
-		// Fallback -> requested sort by metadata, yet none of two items contain it, use alphabetical by name
-		return Collator(a.sortString, b.sortString)
-	},
-	[CustomSortOrder.byMetadataFieldAlphabeticalReverse]: (a: FolderItemForSorting, b: FolderItemForSorting) => {
-		if (a.metadataFieldValue && b.metadataFieldValue) {
-			const sortResult: number = Collator(b.metadataFieldValue, a.metadataFieldValue)
-			if (sortResult === 0) {
-				// Fallback -> requested sort by metadata and both items have the same metadata value
-				return Collator(b.sortString, a.sortString)    // switch to alphabetical sort by note/folder titles
-			} else {
-				return sortResult
-			}
-		}
-		// Item with metadata goes before the w/o metadata
-		if (a.metadataFieldValue) return -1
-		if (b.metadataFieldValue) return 1
-		// Fallback -> requested sort by metadata, yet none of two items contain it, use alphabetical reverse by name
-		return Collator(b.sortString, a.sortString)
-	},
+	[CustomSortOrder.byMetadataFieldAlphabetical]: sorterByMetadataField(StraightOrder),
+	[CustomSortOrder.byMetadataFieldTrueAlphabetical]: sorterByMetadataField(StraightOrder, TrueAlphabetical),
+	[CustomSortOrder.byMetadataFieldAlphabeticalReverse]: sorterByMetadataField(ReverseOrder),
+	[CustomSortOrder.byMetadataFieldTrueAlphabeticalReverse]: sorterByMetadataField(ReverseOrder, TrueAlphabetical),
 
 	// This is a fallback entry which should not be used - the plugin code should refrain from custom sorting at all
-	[CustomSortOrder.standardObsidian]: (a: FolderItemForSorting, b: FolderItemForSorting) => Collator(a.sortString, b.sortString),
+	[CustomSortOrder.standardObsidian]: (a: FolderItemForSorting, b: FolderItemForSorting) => CollatorCompare(a.sortString, b.sortString),
 };
 
 function compareTwoItems(itA: FolderItemForSorting, itB: FolderItemForSorting, sortSpec: CustomSortSpec) {
@@ -111,7 +112,8 @@ const isFolder = (entry: TAbstractFile) => {
 }
 
 const isByMetadata = (order: CustomSortOrder | undefined) => {
-	return order === CustomSortOrder.byMetadataFieldAlphabetical || order === CustomSortOrder.byMetadataFieldAlphabeticalReverse
+	return order === CustomSortOrder.byMetadataFieldAlphabetical || order === CustomSortOrder.byMetadataFieldAlphabeticalReverse ||
+	       order === CustomSortOrder.byMetadataFieldTrueAlphabetical || order === CustomSortOrder.byMetadataFieldTrueAlphabeticalReverse
 }
 
 export const DEFAULT_FOLDER_MTIME: number = 0
