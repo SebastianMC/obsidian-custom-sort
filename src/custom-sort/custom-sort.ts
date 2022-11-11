@@ -380,4 +380,8 @@ export const folderSort = function (sortingSpec: CustomSortSpec, order: string[]
 	} else {
 		this.children = items;
 	}
+
+	// release risky references
+	sortingSpec._mCache = undefined
+	sortingSpec.plugin = undefined
 };
