@@ -482,7 +482,7 @@ Then the remaining notes (not having the `Pages` metadata) are sorted by modific
 > NOTE
 > 
 > The grouping and sorting by metadata is not refreshed automatically after change of the metadata in note(s) to avoid impact on Obsidian performance.
-> After editing of metadata of some note(s) you have to explicitly click the plugin ribbon button to refresh the sorting. Or close and reopen the vault. Or restart Obsidian.
+> After editing of metadata of some note(s) you have to explicitly click the plugin ribbon button to refresh the sorting. Or issue the command `sort on`. Or close and reopen the vault. Or restart Obsidian.
 > This behavior is intentionally different from other grouping and sorting rules, which stay active and up-to-date once enabled.
 
 > NOTE
