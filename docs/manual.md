@@ -52,5 +52,18 @@ and it would result in the expected order of items:
 
 ![Order of notes with group priorites](./svg/priorities-example-b.svg)
 
-For clarity: the three available prefixes `/!` or `/!!` or `/!!!` allow for futher finetuning of sorting groups matching order, the `/!!!` representing the highest priority value
+For clarity: the three available prefixes `/!` and `/!!` and `/!!!` allow for futher finetuning of sorting groups matching order, the `/!!!` representing the highest priority value
 
+> A SIDE NOTE
+> 
+> In the above simplistic example, correct grouping of items can also be achieved in a different way:
+> instead of using priorities, the first sorting group could be expressed differently as `/:files` (no following `...` wildcard):
+> ```yaml
+> ---
+> sorting-spec: |
+>   target-folder: Some folder
+>   /:files
+>   /:files Archive...
+> ---
+> ```
+> The sorting group expressed as `/:files` alone acts as a sorting group 'catch-all-files, which don't match any other sorting rule for the folder' 
