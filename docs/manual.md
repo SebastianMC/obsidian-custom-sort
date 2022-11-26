@@ -29,7 +29,9 @@ sorting-spec: |
 ```
 
 The resulting order of notes would be:
+
 ![Order of notes w/o priorites](./svg/priorities-example-a.svg)
+
 However, a group can be assigned a higher priority in the sorting spec. In result, folder items will be matched against them _before_ any other rules. To impose a priority on a group use the prefix `/!` or `/!!` or `/!!!`
 
 The modified example would be:
@@ -47,6 +49,7 @@ sorting-spec: |
 ```
 
 and it would result in the expected order of items:
+
 ![Order of notes with group priorites](./svg/priorities-example-b.svg)
 
 For clarity: the three available prefixes `/!` or `/!!` or `/!!!` allow for futher finetuning of sorting groups matching order, the `/!!!` representing the highest priority value
