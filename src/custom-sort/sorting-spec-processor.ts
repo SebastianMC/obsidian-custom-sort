@@ -185,18 +185,18 @@ const MetadataFieldIndicatorLexeme: string = 'with-metadata:'
 
 const CommentPrefix: string = '//'
 
-const FileGroupModifierPrio1Lexeme: string = '/!'
-const FileGroupModifierPrio2Lexeme: string = '/!!'
-const FileGroupModifierPrio3Lexeme: string = '/!!!'
+const PriorityModifierPrio1Lexeme: string = '/!'
+const PriorityModifierPrio2Lexeme: string = '/!!'
+const PriorityModifierPrio3Lexeme: string = '/!!!'
 
 const PRIO_1: number = 1
 const PRIO_2: number = 2
 const PRIO_3: number = 3
 
 const SortingGroupPriorityPrefixes: { [key: string]: number } = {
-	[FileGroupModifierPrio1Lexeme]: PRIO_1,
-	[FileGroupModifierPrio2Lexeme]: PRIO_2,
-	[FileGroupModifierPrio3Lexeme]: PRIO_3
+	[PriorityModifierPrio1Lexeme]: PRIO_1,
+	[PriorityModifierPrio2Lexeme]: PRIO_2,
+	[PriorityModifierPrio3Lexeme]: PRIO_3
 }
 
 interface SortingGroupType {
