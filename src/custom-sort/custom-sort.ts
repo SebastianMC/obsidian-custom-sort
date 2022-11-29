@@ -129,6 +129,9 @@ export const determineSortingGroup = function (entry: TFile | TFolder, spec: Cus
 	const entryAsTFile: TFile = entry as TFile
 	const basename: string = aFolder ? entry.name : entryAsTFile.basename
 
+	// When priorities come in play, the ordered list of groups to check could be shorter
+	//    than the actual full set of defined groups, because the outsiders group are not
+	//    in the ordered list (aka priorityOrder array)
 	const numOfGroupsToCheck: number = spec.priorityOrder ? spec.priorityOrder.length : spec.groups.length
 	for (let idx = 0; idx < numOfGroupsToCheck; idx++) {
 		matchedGroup = null
