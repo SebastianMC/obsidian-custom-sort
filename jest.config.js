@@ -6,7 +6,5 @@ module.exports = {
 	moduleNameMapper: {
 		"obsidian": "<rootDir>/node_modules/obsidian/obsidian.d.ts"
 	},
-	transformIgnorePatterns: [
-		'node_modules/(?!obsidian/.*)'
-	]
+	transformIgnorePatterns: []
 };
