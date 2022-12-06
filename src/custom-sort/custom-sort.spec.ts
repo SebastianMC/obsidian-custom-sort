@@ -119,7 +119,7 @@ describe('determineSortingGroup', () => {
 				targetFoldersPaths: ['Some parent folder'],
 				groups: [{
 					type: CustomSortGroupType.ExactHeadAndTail,
-					regexSpec: {
+					regexPrefix: {
 						regex: /^Part *(\d+(?:-\d+)*):/i,
 						normalizerFn: CompoundDashNumberNormalizerFn
 					},
@@ -148,7 +148,7 @@ describe('determineSortingGroup', () => {
 				targetFoldersPaths: ['Some parent folder'],
 				groups: [{
 					type: CustomSortGroupType.ExactHeadAndTail,
-					regexSpec: {
+					regexPrefix: {
 						regex: /^Part *(\d+(?:-\d+)*):/i,
 						normalizerFn: CompoundDashNumberNormalizerFn
 					},
@@ -179,7 +179,7 @@ describe('determineSortingGroup', () => {
 				groups: [{
 					type: CustomSortGroupType.ExactHeadAndTail,
 					exactPrefix: 'Part:',
-					regexSpec: {
+					regexSuffix: {
 						regex: /: *(\d+(?:-\d+)*)-icle$/i,
 						normalizerFn: CompoundDashNumberNormalizerFn
 					}
@@ -208,7 +208,7 @@ describe('determineSortingGroup', () => {
 				groups: [{
 					type: CustomSortGroupType.ExactHeadAndTail,
 					exactPrefix: 'Part',
-					regexSpec: {
+					regexSuffix: {
 						regex: /: *(\d+(?:-\d+)*)-icle$/i,
 						normalizerFn: CompoundDashNumberNormalizerFn
 					}
@@ -257,14 +257,14 @@ describe('determineSortingGroup', () => {
 				path: 'Some parent folder/References.md'
 			});
 		})
-		it('should correctly recognize exact prefix, regex variant', () => {
+		it('should correctly recognize exact prefix, regexL variant', () => {
 			// given
 			const file: TFile = mockTFile('Reference i.xxx.vi.mcm', 'md', 111, MOCK_TIMESTAMP + 222, MOCK_TIMESTAMP + 333);
 			const sortSpec: CustomSortSpec = {
 				targetFoldersPaths: ['/'],
 				groups: [{
 					type: CustomSortGroupType.ExactPrefix,
-					regexSpec: {
+					regexPrefix: {
 						regex: /^Reference *([MDCLXVI]+(?:\.[MDCLXVI]+)*)/i,
 						normalizerFn: CompoundDotRomanNumberNormalizerFn
 					}
