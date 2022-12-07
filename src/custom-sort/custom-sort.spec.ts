@@ -104,7 +104,7 @@ describe('determineSortingGroup', () => {
 
 			// then
 			expect(result).toEqual({
-				groupIdx: 1, // This indicates the last+1 idx
+				groupIdx: 1, // This indicates the last+1 idx (no match)
 				isFolder: false,
 				sortString: "References.md",
 				ctimeNewest: MOCK_TIMESTAMP + 555,
@@ -113,7 +113,35 @@ describe('determineSortingGroup', () => {
 				path: 'Some parent folder/References.md'
 			});
 		})
-		it('should not allow overlap of head and tail, when regexp in head', () => {
+		it('should not allow overlap of head and tail, when simple regexp in head', () => {
+			// given
+			const file: TFile = mockTFile('Part123:-icle', 'md', 444, MOCK_TIMESTAMP + 555, MOCK_TIMESTAMP + 666);
+			const sortSpec: CustomSortSpec = {
+				targetFoldersPaths: ['Some parent folder'],
+				groups: [{
+					type: CustomSortGroupType.ExactHeadAndTail,
+					regexPrefix: {
+						regex: /^Part\d\d\d:/i
+					},
+					exactSuffix: ':-icle'
+				}]
+			}
+
+			// when
+			const result = determineSortingGroup(file, sortSpec)
+
+			// then
+			expect(result).toEqual({
+				groupIdx: 1, // This indicates the last+1 idx (no match)
+				isFolder: false,
+				sortString: "Part123:-icle.md",
+				ctimeNewest: MOCK_TIMESTAMP + 555,
+				ctimeOldest: MOCK_TIMESTAMP + 555,
+				mtime: MOCK_TIMESTAMP + 666,
+				path: 'Some parent folder/Part123:-icle.md'
+			});
+		})
+		it('should not allow overlap of head and tail, when advanced regexp in head', () => {
 			// given
 			const file: TFile = mockTFile('Part123:-icle', 'md', 444, MOCK_TIMESTAMP + 555, MOCK_TIMESTAMP + 666);
 			const sortSpec: CustomSortSpec = {
@@ -142,7 +170,36 @@ describe('determineSortingGroup', () => {
 				path: 'Some parent folder/Part123:-icle.md'
 			});
 		})
-		it('should match head and tail, when regexp in head', () => {
+		it('should match head and tail, when simple regexp in head', () => {
+			// given
+			const file: TFile = mockTFile('Part123:-icle', 'md', 444, MOCK_TIMESTAMP + 555, MOCK_TIMESTAMP + 666);
+			const sortSpec: CustomSortSpec = {
+				targetFoldersPaths: ['Some parent folder'],
+				groups: [{
+					type: CustomSortGroupType.ExactHeadAndTail,
+					regexPrefix: {
+						regex: /^Part\d\d\d:/i,
+						normalizerFn: CompoundDashNumberNormalizerFn
+					},
+					exactSuffix: '-icle'
+				}]
+			}
+
+			// when
+			const result = determineSortingGroup(file, sortSpec)
+
+			// then
+			expect(result).toEqual({
+				groupIdx: 0, // Matched!
+				isFolder: false,
+				sortString: "Part123:-icle.md",
+				ctimeNewest: MOCK_TIMESTAMP + 555,
+				ctimeOldest: MOCK_TIMESTAMP + 555,
+				mtime: MOCK_TIMESTAMP + 666,
+				path: 'Some parent folder/Part123:-icle.md'
+			});
+		})
+		it('should match head and tail, when advanced regexp in head', () => {
 			// given
 			const file: TFile = mockTFile('Part123:-icle', 'md', 444, MOCK_TIMESTAMP + 555, MOCK_TIMESTAMP + 666);
 			const sortSpec: CustomSortSpec = {
@@ -201,7 +258,69 @@ describe('determineSortingGroup', () => {
 				path: 'Some parent folder/Part:123-icle.md'
 			});
 		});
-		it('should match head and tail, when regexp in tail', () => {
+		it('should match head and tail, when simple regexp in head and tail', () => {
+			// given
+			const file: TFile = mockTFile('Part:123-icle', 'md', 444, MOCK_TIMESTAMP + 555, MOCK_TIMESTAMP + 666);
+			const sortSpec: CustomSortSpec = {
+				targetFoldersPaths: ['Some parent folder'],
+				groups: [{
+					type: CustomSortGroupType.ExactHeadAndTail,
+					regexPrefix: {
+						regex: /^Part:\d/i
+					},
+					regexSuffix: {
+						regex: /\d-icle$/i
+					}
+				}]
+			}
+
+			// when
+			const result = determineSortingGroup(file, sortSpec)
+
+			// then
+			expect(result).toEqual({
+				groupIdx: 0, // Matched!
+				isFolder: false,
+				sortString: "Part:123-icle.md",
+				ctimeNewest: MOCK_TIMESTAMP + 555,
+				ctimeOldest: MOCK_TIMESTAMP + 555,
+				mtime: MOCK_TIMESTAMP + 666,
+				path: 'Some parent folder/Part:123-icle.md'
+			});
+		});
+		it('should match head and tail, when simple regexp in head and and mixed in tail', () => {
+			// given
+			const file: TFile = mockTFile('Part:1 1-23.456-icle', 'md', 444, MOCK_TIMESTAMP + 555, MOCK_TIMESTAMP + 666);
+			const sortSpec: CustomSortSpec = {
+				targetFoldersPaths: ['Some parent folder'],
+				groups: [{
+					type: CustomSortGroupType.ExactHeadAndTail,
+					regexPrefix: {
+						regex: /^Part:\d/i
+					},
+					regexSuffix: {
+						regex: / *(\d+(?:-\d+)*).\d\d\d-icle$/i,
+						normalizerFn: CompoundDashNumberNormalizerFn
+					}
+				}]
+			}
+
+			// when
+			const result = determineSortingGroup(file, sortSpec)
+
+			// then
+			expect(result).toEqual({
+				groupIdx: 0, // Matched!
+				isFolder: false,
+				sortString: "00000001|00000023////Part:1 1-23.456-icle.md",
+				matchGroup: '00000001|00000023//',
+				ctimeNewest: MOCK_TIMESTAMP + 555,
+				ctimeOldest: MOCK_TIMESTAMP + 555,
+				mtime: MOCK_TIMESTAMP + 666,
+				path: 'Some parent folder/Part:1 1-23.456-icle.md'
+			});
+		});
+		it('should match head and tail, when advanced regexp in tail', () => {
 			// given
 			const file: TFile = mockTFile('Part:123-icle', 'md', 444, MOCK_TIMESTAMP + 555, MOCK_TIMESTAMP + 666);
 			const sortSpec: CustomSortSpec = {
@@ -258,6 +377,33 @@ describe('determineSortingGroup', () => {
 				path: 'Some parent folder/References.md'
 			});
 		})
+		it('should correctly recognize exact simple regex prefix', () => {
+			// given
+			const file: TFile = mockTFile('Ref2erences', 'md', 111, MOCK_TIMESTAMP + 222, MOCK_TIMESTAMP + 333);
+			const sortSpec: CustomSortSpec = {
+				targetFoldersPaths: ['/'],
+				groups: [{
+					type: CustomSortGroupType.ExactPrefix,
+					regexPrefix: {
+						regex: /Ref[0-9]/i
+					}
+				}]
+			}
+
+			// when
+			const result = determineSortingGroup(file, sortSpec)
+
+			// then
+			expect(result).toEqual({
+				groupIdx: 0,
+				isFolder: false,
+				sortString: "Ref2erences.md",
+				ctimeNewest: MOCK_TIMESTAMP + 222,
+				ctimeOldest: MOCK_TIMESTAMP + 222,
+				mtime: MOCK_TIMESTAMP + 333,
+				path: 'Some parent folder/Ref2erences.md'
+			});
+		})
 		it('should correctly recognize exact prefix, regexL variant', () => {
 			// given
 			const file: TFile = mockTFile('Reference i.xxx.vi.mcm', 'md', 111, MOCK_TIMESTAMP + 222, MOCK_TIMESTAMP + 333);
@@ -295,6 +441,272 @@ describe('determineSortingGroup', () => {
 				groups: [{
 					type: CustomSortGroupType.ExactPrefix,
 					exactPrefix: 'Pref'
+				}]
+			}
+			// when
+			const result = determineSortingGroup(file, sortSpec)
+
+			// then
+			expect(result).toEqual({
+				groupIdx: 1, // This indicates the last+1 idx
+				isFolder: false,
+				sortString: "References.md",
+				ctimeNewest: MOCK_TIMESTAMP + 222,
+				ctimeOldest: MOCK_TIMESTAMP + 222,
+				mtime: MOCK_TIMESTAMP + 333,
+				path: 'Some parent folder/References.md'
+			});
+		})
+	})
+	describe('CustomSortGroupType.ExactSuffix', () => {
+		it('should correctly recognize exact suffix', () => {
+			// given
+			const file: TFile = mockTFile('References', 'md', 111, MOCK_TIMESTAMP + 222, MOCK_TIMESTAMP + 333);
+			const sortSpec: CustomSortSpec = {
+				targetFoldersPaths: ['/'],
+				groups: [{
+					type: CustomSortGroupType.ExactSuffix,
+					exactSuffix: 'ces'
+				}]
+			}
+
+			// when
+			const result = determineSortingGroup(file, sortSpec)
+
+			// then
+			expect(result).toEqual({
+				groupIdx: 0,
+				isFolder: false,
+				sortString: "References.md",
+				ctimeNewest: MOCK_TIMESTAMP + 222,
+				ctimeOldest: MOCK_TIMESTAMP + 222,
+				mtime: MOCK_TIMESTAMP + 333,
+				path: 'Some parent folder/References.md'
+			});
+		})
+		it('should correctly recognize exact simple regex suffix', () => {
+			// given
+			const file: TFile = mockTFile('References 12', 'md', 111, MOCK_TIMESTAMP + 222, MOCK_TIMESTAMP + 333);
+			const sortSpec: CustomSortSpec = {
+				targetFoldersPaths: ['/'],
+				groups: [{
+					type: CustomSortGroupType.ExactSuffix,
+					regexSuffix: {
+						regex: /ces [0-9][0-9]$/i
+					}
+				}]
+			}
+
+			// when
+			const result = determineSortingGroup(file, sortSpec)
+
+			// then
+			expect(result).toEqual({
+				groupIdx: 0,
+				isFolder: false,
+				sortString: "References 12.md",
+				ctimeNewest: MOCK_TIMESTAMP + 222,
+				ctimeOldest: MOCK_TIMESTAMP + 222,
+				mtime: MOCK_TIMESTAMP + 333,
+				path: 'Some parent folder/References 12.md'
+			});
+		})
+		it('should correctly recognize exact suffix, regexL variant', () => {
+			// given
+			const file: TFile = mockTFile('Reference i.xxx.vi.mcm', 'md', 111, MOCK_TIMESTAMP + 222, MOCK_TIMESTAMP + 333);
+			const sortSpec: CustomSortSpec = {
+				targetFoldersPaths: ['/'],
+				groups: [{
+					type: CustomSortGroupType.ExactSuffix,
+					regexSuffix: {
+						regex: /  *([MDCLXVI]+(?:\.[MDCLXVI]+)*)$/i,
+						normalizerFn: CompoundDotRomanNumberNormalizerFn
+					}
+				}]
+			}
+
+			// when
+			const result = determineSortingGroup(file, sortSpec)
+
+			// then
+			expect(result).toEqual({
+				groupIdx: 0,
+				isFolder: false,
+				sortString: '00000001|00000030|00000006|00001900////Reference i.xxx.vi.mcm.md',
+				matchGroup: "00000001|00000030|00000006|00001900//",
+				ctimeNewest: MOCK_TIMESTAMP + 222,
+				ctimeOldest: MOCK_TIMESTAMP + 222,
+				mtime: MOCK_TIMESTAMP + 333,
+				path: 'Some parent folder/Reference i.xxx.vi.mcm.md'
+			});
+		})
+		it('should correctly process not matching suffix', () => {
+			// given
+			const file: TFile = mockTFile('References', 'md', 111, MOCK_TIMESTAMP + 222, MOCK_TIMESTAMP + 333);
+			const sortSpec: CustomSortSpec = {
+				targetFoldersPaths: ['/'],
+				groups: [{
+					type: CustomSortGroupType.ExactSuffix,
+					exactSuffix: 'ence'
+				}]
+			}
+			// when
+			const result = determineSortingGroup(file, sortSpec)
+
+			// then
+			expect(result).toEqual({
+				groupIdx: 1, // This indicates the last+1 idx
+				isFolder: false,
+				sortString: "References.md",
+				ctimeNewest: MOCK_TIMESTAMP + 222,
+				ctimeOldest: MOCK_TIMESTAMP + 222,
+				mtime: MOCK_TIMESTAMP + 333,
+				path: 'Some parent folder/References.md'
+			});
+		})
+		it('should correctly process not matching regex suffix', () => {
+			// given
+			const file: TFile = mockTFile('References', 'md', 111, MOCK_TIMESTAMP + 222, MOCK_TIMESTAMP + 333);
+			const sortSpec: CustomSortSpec = {
+				targetFoldersPaths: ['/'],
+				groups: [{
+					type: CustomSortGroupType.ExactSuffix,
+					regexSuffix: {
+						regex: /ence$/i
+					}
+				}]
+			}
+			// when
+			const result = determineSortingGroup(file, sortSpec)
+
+			// then
+			expect(result).toEqual({
+				groupIdx: 1, // This indicates the last+1 idx
+				isFolder: false,
+				sortString: "References.md",
+				ctimeNewest: MOCK_TIMESTAMP + 222,
+				ctimeOldest: MOCK_TIMESTAMP + 222,
+				mtime: MOCK_TIMESTAMP + 333,
+				path: 'Some parent folder/References.md'
+			});
+		})
+	})
+	describe('CustomSortGroupType.ExactName', () => {
+		it('should correctly recognize exact name', () => {
+			// given
+			const file: TFile = mockTFile('References', 'md', 111, MOCK_TIMESTAMP + 222, MOCK_TIMESTAMP + 333);
+			const sortSpec: CustomSortSpec = {
+				targetFoldersPaths: ['/'],
+				groups: [{
+					type: CustomSortGroupType.ExactName,
+					exactText: 'References'
+				}]
+			}
+
+			// when
+			const result = determineSortingGroup(file, sortSpec)
+
+			// then
+			expect(result).toEqual({
+				groupIdx: 0,
+				isFolder: false,
+				sortString: "References.md",
+				ctimeNewest: MOCK_TIMESTAMP + 222,
+				ctimeOldest: MOCK_TIMESTAMP + 222,
+				mtime: MOCK_TIMESTAMP + 333,
+				path: 'Some parent folder/References.md'
+			});
+		})
+		it('should correctly recognize exact simple regex-based name', () => {
+			// given
+			const file: TFile = mockTFile('References 12', 'md', 111, MOCK_TIMESTAMP + 222, MOCK_TIMESTAMP + 333);
+			const sortSpec: CustomSortSpec = {
+				targetFoldersPaths: ['/'],
+				groups: [{
+					type: CustomSortGroupType.ExactName,
+					regexPrefix: {
+						regex: /^References [0-9][0-9]$/i
+					}
+				}]
+			}
+
+			// when
+			const result = determineSortingGroup(file, sortSpec)
+
+			// then
+			expect(result).toEqual({
+				groupIdx: 0,
+				isFolder: false,
+				sortString: "References 12.md",
+				ctimeNewest: MOCK_TIMESTAMP + 222,
+				ctimeOldest: MOCK_TIMESTAMP + 222,
+				mtime: MOCK_TIMESTAMP + 333,
+				path: 'Some parent folder/References 12.md'
+			});
+		})
+		it('should correctly recognize exact name, regexL variant', () => {
+			// given
+			const file: TFile = mockTFile('Reference i.xxx.vi.mcm', 'md', 111, MOCK_TIMESTAMP + 222, MOCK_TIMESTAMP + 333);
+			const sortSpec: CustomSortSpec = {
+				targetFoldersPaths: ['/'],
+				groups: [{
+					type: CustomSortGroupType.ExactName,
+					regexPrefix: {
+						regex: /^Reference  *([MDCLXVI]+(?:\.[MDCLXVI]+)*)$/i,
+						normalizerFn: CompoundDotRomanNumberNormalizerFn
+					}
+				}]
+			}
+
+			// when
+			const result = determineSortingGroup(file, sortSpec)
+
+			// then
+			expect(result).toEqual({
+				groupIdx: 0,
+				isFolder: false,
+				sortString: '00000001|00000030|00000006|00001900////Reference i.xxx.vi.mcm.md',
+				matchGroup: "00000001|00000030|00000006|00001900//",
+				ctimeNewest: MOCK_TIMESTAMP + 222,
+				ctimeOldest: MOCK_TIMESTAMP + 222,
+				mtime: MOCK_TIMESTAMP + 333,
+				path: 'Some parent folder/Reference i.xxx.vi.mcm.md'
+			});
+		})
+		it('should correctly process not matching name', () => {
+			// given
+			const file: TFile = mockTFile('References', 'md', 111, MOCK_TIMESTAMP + 222, MOCK_TIMESTAMP + 333);
+			const sortSpec: CustomSortSpec = {
+				targetFoldersPaths: ['/'],
+				groups: [{
+					type: CustomSortGroupType.ExactName,
+					exactText: 'ence'
+				}]
+			}
+			// when
+			const result = determineSortingGroup(file, sortSpec)
+
+			// then
+			expect(result).toEqual({
+				groupIdx: 1, // This indicates the last+1 idx
+				isFolder: false,
+				sortString: "References.md",
+				ctimeNewest: MOCK_TIMESTAMP + 222,
+				ctimeOldest: MOCK_TIMESTAMP + 222,
+				mtime: MOCK_TIMESTAMP + 333,
+				path: 'Some parent folder/References.md'
+			});
+		})
+		it('should correctly process not matching regex name', () => {
+			// given
+			const file: TFile = mockTFile('References', 'md', 111, MOCK_TIMESTAMP + 222, MOCK_TIMESTAMP + 333);
+			const sortSpec: CustomSortSpec = {
+				targetFoldersPaths: ['/'],
+				groups: [{
+					type: CustomSortGroupType.ExactName,
+					regexPrefix: {
+						regex: /^Reference$/i
+					}
 				}]
 			}
 			// when
