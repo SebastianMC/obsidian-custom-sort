@@ -5,10 +5,11 @@ import {
 	determineFolderDatesIfNeeded,
 	determineSortingGroup,
 	FolderItemForSorting,
+	matchGroupRegex,
 	SorterFn,
 	Sorters
 } from './custom-sort';
-import {CustomSortGroupType, CustomSortOrder, CustomSortSpec} from './custom-sort-types';
+import {CustomSortGroupType, CustomSortOrder, CustomSortSpec, RegExpSpec} from './custom-sort-types';
 import {CompoundDashNumberNormalizerFn, CompoundDotRomanNumberNormalizerFn} from "./sorting-spec-processor";
 
 const mockTFile = (basename: string, ext: string, size?: number, ctime?: number, mtime?: number): TFile => {
@@ -1010,6 +1011,88 @@ describe('determineFolderDatesIfNeeded', () => {
 		expect(result.ctimeOldest).toEqual(TIMESTAMP_OLDEST)
 		expect(result.ctimeNewest).toEqual(TIMESTAMP_NEWEST)
 		expect(result.mtime).toEqual(TIMESTAMP_NEWEST)
+	})
+})
+
+describe('matchGroupRegex', () => {
+	it( 'should correctly handle no match', () => {
+		// given
+		const regExpSpec: RegExpSpec = {
+			regex: /a(b)c/i
+		}
+		const name: string = 'Abbc'
+
+		// when
+		const [matched, matchedGroup, entireMatch] = matchGroupRegex(regExpSpec, name)
+
+		// then
+		expect(matched).toBe(false)
+		expect(matchedGroup).toBeUndefined()
+		expect(entireMatch).toBeUndefined()
+	})
+	it('should correctly handle no matching group match and normalizer absent', () => {
+		// given
+		const regExpSpec: RegExpSpec = {
+			regex: /ab+c/i
+		}
+		const name: string = 'Abbbc'
+
+		// when
+		const [matched, matchedGroup, entireMatch] = matchGroupRegex(regExpSpec, name)
+
+		// then
+		expect(matched).toBe(true)
+		expect(matchedGroup).toBeUndefined()
+		expect(entireMatch).toBe('Abbbc')
+	})
+	it('should correctly handle no matching group match and normalizer present', () => {
+		// given
+		const regExpSpec: RegExpSpec = {
+			regex: /ab+c/i,
+			normalizerFn: jest.fn()
+		}
+		const name: string = 'Abc'
+
+		// when
+		const [matched, matchedGroup, entireMatch] = matchGroupRegex(regExpSpec, name)
+
+		// then
+		expect(matched).toBe(true)
+		expect(matchedGroup).toBeUndefined()
+		expect(entireMatch).toBe('Abc')
+		expect(regExpSpec.normalizerFn).not.toHaveBeenCalled()
+	})
+	it('should correctly handle matching group match and normalizer absent', () => {
+		// given
+		const regExpSpec: RegExpSpec = {
+			regex: /a(b+)c/i
+		}
+		const name: string = 'Abbbc'
+
+		// when
+		const [matched, matchedGroup, entireMatch] = matchGroupRegex(regExpSpec, name)
+
+		// then
+		expect(matched).toBe(true)
+		expect(matchedGroup).toBe('bbb')
+		expect(entireMatch).toBe('Abbbc')
+	})
+	it('should correctly handle matching group match and normalizer present', () => {
+		// given
+		const regExpSpec: RegExpSpec = {
+			regex: /a(b+)c/i,
+			normalizerFn: jest.fn((s) => `>>${s}<<`)
+		}
+		const name: string = 'Abc'
+
+		// when
+		const [matched, matchedGroup, entireMatch] = matchGroupRegex(regExpSpec, name)
+
+		// then
+		expect(matched).toBe(true)
+		expect(matchedGroup).toBe('>>b<<')
+		expect(entireMatch).toBe('Abc')
+		expect(regExpSpec.normalizerFn).toHaveBeenCalledTimes(1)
 	})
 })
 
