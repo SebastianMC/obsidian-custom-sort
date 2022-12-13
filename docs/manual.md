@@ -67,3 +67,13 @@ For clarity: the three available prefixes `/!` and `/!!` and `/!!!` allow for fu
 > ---
 > ```
 > The sorting group expressed as `/:files` alone acts as a sorting group 'catch-all-files, which don't match any other sorting rule for the folder' 
+
+## Simple wildcards
+
+Currently the below simple wildcard syntax is supported:
+
+| Wildcard  | Description                  | Example                                                          |Example match|
+|-----------|------------------------------|------------------------------------------------------------------|---|
+| `\\d`     | A single digit (exactly one) | `/:files Section \\d\\d`                                         |`Section 23`|
+| `\\[0-9]` | A single digit (exactly one) | `/folders Notes of \\[0-9]\\[0-9]\\[0-9]\\[0-9]-\\[0-9]\\[0-9]-\\[0-9]\\[0-9]` |`Notes of 2022-12-13`|
+

@@ -1365,11 +1365,11 @@ const txtInputErrorSpaceAsValueOfAscendingAttr: string = `
 ORDER-ASC: 
 `
 const txtInputErrorInvalidValueOfDescendingAttr: string = `
-/Folders:
+/folders
  > definitely not correct
 `
 const txtInputErrorNoSpaceDescendingAttr: string = `
-/files: Chapter ...
+/:files Chapter ...
 Order-DESC:MODIFIED
 `
 const txtInputErrorItemToHideWithNoValue: string = `
@@ -1666,6 +1666,17 @@ describe('SortingSpecProcessor error detection and reporting', () => {
 			`${ERR_PREFIX} 10:NumericalSymbolAdjacentToWildcard Numerical sorting symbol must not be directly adjacent to a wildcard because of potential performance problem. An additional explicit separator helps in such case. ${ERR_SUFFIX_IN_LINE(1)}`)
 		expect(errorsLogger).toHaveBeenNthCalledWith(2, ERR_LINE_TXT(s))
 	})
+	it.each([
+		'% \\.d+\\d...',
+		'% ...[0-9]\\d+',
+		'% Chapter\\R+\\d... page',
+		'% Section ...[0-9]\\-r+page'
+	])('should not recognize adjacency error in >%s<', (s: string) => {
+		const inputTxtArr: Array<string> = s.split('\n')
+		const result = processor.parseSortSpecFromText(inputTxtArr, 'mock-folder', 'custom-name-note.md')
+		expect(result).not.toBeNull()
+		expect(errorsLogger).not.toHaveBeenCalled()
+	})
 })
 
 const txtInputTargetFolderCCC: string = `
@@ -1832,6 +1843,7 @@ describe('extractNumericSortingSymbol', () => {
 		['', null],
 		['d+', null],
 		[' \\d +', null],
+		[' [0-9]', null],
 		['\\ d +', null],
 		[' \\d+', '\\d+'],
 		['--\\.D+\\d+', '\\.D+'],
@@ -1865,6 +1877,11 @@ describe('convertPlainStringWithNumericSortingSymbolToRegex', () => {
 		['W\\dLorem ipsum\\r+:', /W\dLorem ipsum *([MDCLXVI]+):/i],
 		['Lorem \\d\\r+\\dipsum:', /Lorem \d *([MDCLXVI]+)\dipsum:/i],
 		['Lorem \\d\\D+\\dipsum:', /Lorem \d *(\d+)\dipsum:/i],
+			// Edge case to act as spec - actually the three dots ... should never reach conversion to regex
+		['% \\.d+\\d...', /%  *(\d+(?:\.\d+)*)\d\.\.\./i],
+		['% ...[0-9]\\d+', /% \.\.\.\[0\-9\] *(\d+)/i],
+		['% Chapter\\R+\\d... page', /% Chapter *([MDCLXVI]+)\d\.\.\. page/i],
+		['% Section ...[0-9]\\-r+page', /% Section \.\.\.\[0\-9\] *([MDCLXVI]+(?:-[MDCLXVI]+)*)page/i],
 		    // Edge and error cases, behavior covered by tests to act as specification of the engine here
 		    //   even if at run-time the error checking prevents some such expressions
 		['abc\\d+efg\\d+hij', /abc *(\d+)efg/i], // Double advanced numerical sorting symbol, error case
