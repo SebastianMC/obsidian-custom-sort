@@ -255,6 +255,7 @@ const CompoundNumberDashRegexSymbol: string = '\\-d+'  // Compound number with d
 
 const InlineRegexSymbol_Digit1: string = '\\d'
 const InlineRegexSymbol_Digit2: string = '\\[0-9]'
+const InlineRegexSymbol_0_to_3: string = '\\[0-3]'
 
 const UnsafeRegexCharsRegex: RegExp = /[\^$.\-+\[\]{}()|*?=!\\]/g
 
@@ -275,13 +276,15 @@ const numericSortingSymbolsRegex = new RegExp(numericSortingSymbolsArr.join('|')
 
 const inlineRegexSymbolsArrEscapedForRegex: Array<string> = [
 	escapeRegexUnsafeCharacters(InlineRegexSymbol_Digit1),
-	escapeRegexUnsafeCharacters(InlineRegexSymbol_Digit2)
+	escapeRegexUnsafeCharacters(InlineRegexSymbol_Digit2),
+	escapeRegexUnsafeCharacters(InlineRegexSymbol_0_to_3)
 ]
 
 // Don't be confused if the source lexeme is equal to the resulting regex piece, logically these two distinct spaces
 const inlineRegexSymbolsToRegexExpressionsArr: { [key: string]: string} = {
 	[InlineRegexSymbol_Digit1]: '\\d',
 	[InlineRegexSymbol_Digit2]: '[0-9]',
+	[InlineRegexSymbol_0_to_3]: '[0-3]',
 }
 
 const inlineRegexSymbolsDetectionRegex = new RegExp(inlineRegexSymbolsArrEscapedForRegex.join('|'), 'gi')
