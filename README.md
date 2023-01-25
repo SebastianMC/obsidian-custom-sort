@@ -1,7 +1,7 @@
 # Simplified README.md
 
 > This is a simple version of README which highlights the basic scenario and most commonly used feature
-> 
+>
 > The [long and much more detailed README.md is here](./advanced-README.md)
 
 ## Freely arrange notes and folders in File Explorer (https://obsidian.md plugin)
@@ -16,7 +16,7 @@ Take full control of the order of your notes and folders:
 - group and sort notes and folders by notes custom metadata
 - support for automatic sorting by standard and non-standard rules
 - mixing manual and automatic ordering also supported
-- order by compound numbers in prefix, in suffix (e.g. date in suffix) or inbetween 
+- order by compound numbers in prefix, in suffix (e.g. date in suffix) or inbetween
 - Roman numbers support, also compound Roman numbers
 - grouping by prefix or suffix or prefix and suffix
   - different sorting rules per group even inside the same folder
@@ -48,13 +48,13 @@ You should see the files and subfolder in your folder sorted in reverse alphabet
 > Remarks:
 > - your new `sortspec` note should [look like this](./docs/examples/basic/sortspec.md?plain=1) except for the syntax highlighting, which could differ
 > - you will notice that the folders and files are treated equally and thus intermixed
->   - the behavior depends on what files and subfolders you have in your folder 
+    >   - the behavior depends on what files and subfolders you have in your folder
 > - changing the sorting order via the standard Obsidian UI button won't affect your folder, unless...
->   - ...unless you deactivate the custom sorting via clicking the ribbon button to make it (![Inactive](./docs/icons/icon-inactive.png)) 
+    >   - ...unless you deactivate the custom sorting via clicking the ribbon button to make it (![Inactive](./docs/icons/icon-inactive.png))
 > - for clarity: the underlying file of the note `sortspec` is obviously `sortspec.md`
 > - in case of troubles refer to the [TL;DR section of advanced README.md](./advanced-README.md#tldr-usage)
-> - feel free to experiment! The plugin works in a non-destructive fashion, and it doesn't modify the content of your vault. 
->   It only changes the order in which the files and folders are displayed in File Explorer
+> - feel free to experiment! The plugin works in a non-destructive fashion, and it doesn't modify the content of your vault.
+    >   It only changes the order in which the files and folders are displayed in File Explorer
 > - indentation matters in YAML -> the two leading spaces in `  order-desc: a-z` are intentional and required
 > - it is only touches the surface of the rich capabilities of this custom sorting plugin. For more details go to [advanced version of README.md](./advanced-README.md)
 
@@ -63,16 +63,37 @@ The full list of basic sorting orders include:
   - 'a' goes before 'z' and numbers are treated specifically and 2 goes before 11
 - `  order-desc: a-z` - **reverse alphabetical order**, aka reverse natural, aka descending alphabetical
   - 'z' goes before 'a' and numbers are treated specifically and 11 goes before 2
-- `  order-asc: true a-z` - **true alphabetical order**, where 'a' goes before 'z' and numbers are treated as texts and 11 goes before 2
-- `  order-desc: true a-z` - **true reverse alphabetical order**, where 'z' goes before 'a' and numbers are treated as texts and 11 goes before 2
-- `  order-asc: created`
-- `  order-desc: created`
-- `  order-asc: modified`
-- `  order-desc: modified`
-- `  order-asc: advanced modified`
-- `  order-desc: advanced modified`
-- `  order-asc: advanced created`
-- `  order-desc: advanced created`
+- `  order-asc: true a-z` - **true alphabetical order**
+  - 'a' goes before 'z' and numbers are treated as texts and 11 goes before 2
+- `  order-desc: true a-z` - **true reverse alphabetical order**, aka descending true alphabetical
+  - 'z' goes before 'a' and numbers are treated as texts and 11 goes before 2
+- `  order-asc: created` - **by creation date**
+  - the oldest notes go first. Sub-folders pushed to the top, alphabetically
+- `  order-desc: created` - **by creation date, descending**
+  - the newest notes go first. Sub-folders pushed to the bottom, alphabetically
+- `  order-asc: advanced created` - **by creation date, also for folders**
+  - the oldest notes and sub-folders go first
+  - for sub-folders the creation date of the oldest contained note is taken as folder's creation date
+  - sub-folders not containing any notes are pushed to the top, alphabetically
+- `  order-desc: advanced created` - **by creation date, descending, also for folders**
+  - the newest notes and sub-folders go first
+  - for sub-folders the creation date of the newest contained note is taken as folder's creation date
+  - sub-folders not containing any notes are pushed to the bottom, alphabetically
+- `  order-asc: modified` - **by modification date**
+  - the most dusty notes go first. Sub-folders pushed to the top, alphabetically
+- `  order-desc: modified` - **by modification date, descending**
+  - the most recently modified notes go first. Sub-folders pushed to the bottom, alphabetically
+- `  order-asc: advanced modified` - **by modification date, also for folders**
+  - the most dusty notes and sub-folders go first
+  - for sub-folders the modification date of the most dusty contained note is taken as folder's modification date
+  - sub-folders not containing any notes are pushed to the top, alphabetically
+- `  order-desc: advanced modified` - **by modification date, descending, also for folders**
+  - the most recently modified notes and sub-folders go first
+  - for sub-folders the modification date of the most recently modified contained note is taken as folder's modification date
+  - sub-folders not containing any notes are pushed to the bottom, alphabetically
+
+> Remark:
+> In the above list the `-asc` stems from 'Ascending' and `-desc` stems from `Descending`
 
 ## Ribbon icon
 
@@ -86,7 +107,7 @@ States of the ribbon icon:
 - ![General Error](./docs/icons/icon-general-error.png) Plugin suspended. General error.
 - ![Sorting not applied](./docs/icons/icon-not-applied.png) Plugin enabled but the custom sorting was not applied.
 
-For more details on the icon states refer to [Ribbon icon section of the advanced-README.md](./advanced-README.md#ribbon-icon) 
+For more details on the icon states refer to [Ribbon icon section of the advanced-README.md](./advanced-README.md#ribbon-icon)
 
 ## Installing the plugin
 
