@@ -46,7 +46,7 @@ The ribbon icon should turn (![Active](./docs/icons/icon-active.png)) and the so
 
 You should see the files and sub-folders in your folder sorted in reverse alphabetical order, folders and files intermixed
 
-An illustrative image:
+An illustrative image which shows the reverse alphabetical order applied to the root folder of some vault:
 
 ![Basic example](./docs/svg/simplest-example-3.svg)
 
