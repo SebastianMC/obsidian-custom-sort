@@ -1,5 +1,7 @@
-# Simplified README.md to highlight the basic scenarios and most commonly used features
+# Simplified README.md
 
+> This is a simple version of README which highlights the basic scenarios and most commonly used features
+> 
 > The [long and detailed README.md is here](./advanced-README.md)
 
 ## Freely arrange notes and folders in File Explorer (https://obsidian.md plugin)
