@@ -55,13 +55,13 @@ An illustrative image which shows the reverse alphabetical order applied to the 
 > Remarks:
 > - your new `sortspec` note should [look like this](./docs/examples/basic/sortspec.md?plain=1) except for the syntax highlighting, which could differ
 > - you will notice that the folders and files are treated equally and thus intermixed
-    >   - the behavior depends on what files and subfolders you have in your folder
+>   - the behavior depends on what files and subfolders you have in your folder
 > - changing the sorting order via the standard Obsidian UI button won't affect your folder, unless...
-    >   - ...unless you deactivate the custom sorting via clicking the ribbon button to make it (![Inactive](./docs/icons/icon-inactive.png))
+>   - ...unless you deactivate the custom sorting via clicking the ribbon button to make it (![Inactive](./docs/icons/icon-inactive.png))
 > - for clarity: the underlying file of the note `sortspec` is obviously `sortspec.md`
 > - in case of troubles refer to the [TL;DR section of advanced README.md](./advanced-README.md#tldr-usage)
 > - feel free to experiment! The plugin works in a non-destructive fashion, and it doesn't modify the content of your vault.
-    >   It only changes the order in which the files and folders are displayed in File Explorer
+>   It only changes the order in which the files and folders are displayed in File Explorer
 > - indentation matters in YAML -> the two leading spaces in `  order-desc: a-z` are intentional and required
 > - it is only touches the surface of the rich capabilities of this custom sorting plugin. For more details go to [advanced version of README.md](./advanced-README.md)
 
