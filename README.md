@@ -42,7 +42,7 @@ sorting-spec: |
 Click the ribbon button (![Inactive](./docs/icons/icon-inactive.png)) to tell the plugin to read the sorting specification and apply it.
 The ribbon icon should turn (![Active](./docs/icons/icon-active.png)) and the sorting should be applied to the folder
 
-**Done!**
+!!! **Done!** !!!
 
 You should see the files and sub-folders in your folder sorted in reverse alphabetical order, folders and files intermixed
 
