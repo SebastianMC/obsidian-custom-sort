@@ -58,8 +58,10 @@ You should see the files and subfolder in your folder sorted in reverse alphabet
 > - it is only touches the surface of the rich capabilities of this custom sorting plugin. For more details go to [advanced version of README.md](./advanced-README.md)
 
 The full list of basic sorting orders include:
-- `  order-asc: a-z` - **alphabetical order**, aka natural, where 'a' goes before 'z' and numbers are treated specifically and 2 goes before 11
-- `  order-desc: a-z` - **reverse alphabetical order**, aka reverse natural, where 'z' goes before 'a' and numbers are treated specifically and 11 goes before 2
+- `  order-asc: a-z` - **alphabetical order**, aka natural
+  - 'a' goes before 'z' and numbers are treated specifically and 2 goes before 11
+- `  order-desc: a-z` - **reverse alphabetical order**, aka reverse natural
+  - 'z' goes before 'a' and numbers are treated specifically and 11 goes before 2
 - `  order-asc: true a-z` - **true alphabetical order**, where 'a' goes before 'z' and numbers are treated as texts and 11 goes before 2
 - `  order-desc: true a-z` - **true reverse alphabetical order**, where 'z' goes before 'a' and numbers are treated as texts and 11 goes before 2
 - `  order-asc: created`
