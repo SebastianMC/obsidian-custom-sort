@@ -55,12 +55,13 @@ You should see the files and subfolder in your folder sorted in reverse alphabet
 > - in case of troubles refer to the [TL;DR section of advanced README.md](./advanced-README.md#tldr-usage)
 > - feel free to experiment! The plugin works in a non-destructive fashion, and it doesn't modify the content of your vault. 
 >   It only changes the order in which the files and folders are displayed in File Explorer
+> - indentation matters in YAML -> the two leading spaces in `  order-desc: a-z` are intentional and required
 > - it is only touches the surface of the rich capabilities of this custom sorting plugin. For more details go to [advanced version of README.md](./advanced-README.md)
 
 The full list of basic sorting orders include:
 - `  order-asc: a-z` - **alphabetical order**, aka natural
   - 'a' goes before 'z' and numbers are treated specifically and 2 goes before 11
-- `  order-desc: a-z` - **reverse alphabetical order**, aka reverse natural
+- `  order-desc: a-z` - **reverse alphabetical order**, aka reverse natural, aka descending alphabetical
   - 'z' goes before 'a' and numbers are treated specifically and 11 goes before 2
 - `  order-asc: true a-z` - **true alphabetical order**, where 'a' goes before 'z' and numbers are treated as texts and 11 goes before 2
 - `  order-desc: true a-z` - **true reverse alphabetical order**, where 'z' goes before 'a' and numbers are treated as texts and 11 goes before 2
