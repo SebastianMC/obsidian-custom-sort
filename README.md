@@ -63,7 +63,7 @@ An illustrative image which shows the reverse alphabetical order applied to the 
 > - feel free to experiment! The plugin works in a non-destructive fashion, and it doesn't modify the content of your vault.
 >   It only changes the order in which the files and folders are displayed in File Explorer
 > - indentation matters in YAML -> the two leading spaces in `  order-desc: a-z` are intentional and required
-> - it is only touches the surface of the rich capabilities of this custom sorting plugin. For more details go to [advanced version of README.md](./advanced-README.md)
+> - this common example only touches the surface of the rich capabilities of this custom sorting plugin. For more details go to [advanced version of README.md](./advanced-README.md)
 
 ## Basic automatic sorting methods
 
