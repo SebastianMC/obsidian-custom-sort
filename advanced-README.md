@@ -1,6 +1,6 @@
-# Simplified README.md to highlight the basic scenarios and most commonly used features
+# Advanced version of README.md for advanced users
 
-> The [long and detailed README.md is here](./advanced-README.md)
+The [simplified README.md is here](./README.md)
 
 ## Freely arrange notes and folders in File Explorer (https://obsidian.md plugin)
 
@@ -14,7 +14,7 @@ Take full control of the order of your notes and folders:
 - group and sort notes and folders by notes custom metadata
 - support for automatic sorting by standard and non-standard rules
 - mixing manual and automatic ordering also supported
-- order by compound numbers in prefix, in suffix (e.g. date in suffix) or inbetween 
+- order by compound numbers in prefix, in suffix (e.g date in suffix) or inbetween 
 - Roman numbers support, also compound Roman numbers
 - grouping by prefix or suffix or prefix and suffix
   - different sorting rules per group even inside the same folder
