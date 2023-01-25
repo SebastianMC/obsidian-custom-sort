@@ -42,8 +42,11 @@ sorting-spec: |
 Click the ribbon button (![Inactive](./docs/icons/icon-inactive.png)) to tell the plugin to read the sorting specification and apply it.
 The ribbon icon should turn (![Active](./docs/icons/icon-active.png)) and the sorting should be applied to the folder
 
-Done!
-You should see the files and subfolder in your folder sorted in reverse alphabetical order, folders and files intermixed
+**Done!**
+
+You should see the files and sub-folders in your folder sorted in reverse alphabetical order, folders and files intermixed
+
+### Remarks
 
 > Remarks:
 > - your new `sortspec` note should [look like this](./docs/examples/basic/sortspec.md?plain=1) except for the syntax highlighting, which could differ
@@ -58,7 +61,9 @@ You should see the files and subfolder in your folder sorted in reverse alphabet
 > - indentation matters in YAML -> the two leading spaces in `  order-desc: a-z` are intentional and required
 > - it is only touches the surface of the rich capabilities of this custom sorting plugin. For more details go to [advanced version of README.md](./advanced-README.md)
 
-The full list of basic sorting orders include:
+## Basic automatic sorting methods
+
+The list of basic automatic sorting orders includes:
 - `  order-asc: a-z` - **alphabetical order**, aka natural
   - 'a' goes before 'z' and numbers are treated specifically and 2 goes before 11
 - `  order-desc: a-z` - **reverse alphabetical order**, aka reverse natural, aka descending alphabetical
@@ -93,7 +98,12 @@ The full list of basic sorting orders include:
   - sub-folders not containing any notes are pushed to the bottom, alphabetically
 
 > Remark:
-> In the above list the `-asc` stems from 'Ascending' and `-desc` stems from `Descending`
+> In the above list the `-asc` stems from `Ascending` and `-desc` stems from `Descending`
+
+## Manual sorting
+
+The **manual ordering of notes and folders** is also done via the sorting configuration.
+Refer to the [TL;DR section of advanced README.md](./advanced-README.md#tldr-usage) for examples and instructions
 
 ## Ribbon icon
 
