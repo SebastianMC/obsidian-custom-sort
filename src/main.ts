@@ -236,7 +236,6 @@ export default class CustomSortPlugin extends Plugin {
 			if (this.sortSpecCache) {
 				if (fileExplorerView) {
 					this.showNotice('Custom sort ON');
-					this.initialAutoOrManualSortingTriggered = true
 					iconToSet = ICON_SORT_ENABLED_ACTIVE
 				} else {
 					this.showNotice('Custom sort GENERAL PROBLEM. See console for detailed message.');
@@ -260,6 +259,7 @@ export default class CustomSortPlugin extends Plugin {
 		if (fileExplorerView) {
 			if (this.fileExplorerFolderPatched) {
 				fileExplorerView.requestSort();
+				this.initialAutoOrManualSortingTriggered = true
 			}
 		} else {
 			if (iconToSet === ICON_SORT_ENABLED_ACTIVE) {
@@ -338,11 +338,19 @@ export default class CustomSortPlugin extends Plugin {
 						if (this.sortSpecCache) { // successful read of sorting specifications?
 							d.log(`RS3.1`)
 							this.showNotice('Custom sort ON')
-							const fileExplorerView: FileExplorerView | undefined = this.checkFileExplorerIsAvailableAndPatchable(false)
+							let fileExplorerView: FileExplorerView | undefined = this.checkFileExplorerIsAvailableAndPatchable(false)
+							if (fileExplorerView && !this.fileExplorerFolderPatched) {
+								this.fileExplorerFolderPatched = this.patchFileExplorerFolder(fileExplorerView);
+
+								if (!this.fileExplorerFolderPatched) {
+									fileExplorerView = undefined
+								}
+							}
 							if (fileExplorerView) {
 								d.log(`RS3.1.1`)
 								setIcon(this.ribbonIconEl, ICON_SORT_ENABLED_ACTIVE)
 								fileExplorerView.requestSort()
+								this.initialAutoOrManualSortingTriggered = true
 							} else {
 								d.log(`RS3.1.2`)
 								// Remark: in this case the File Explorer will render later on with standard Obsidian sort
