@@ -59,6 +59,8 @@ import {
 	ImplicitSortspecForBookmarksIntegration
 } from "./custom-sort/custom-sort-utils";
 
+import {diag as d} from "./diag/diag-utils"
+
 interface CustomSortPluginSettings {
 	additionalSortspecFile: string
 	suspended: boolean
@@ -188,6 +190,7 @@ export default class CustomSortPlugin extends Plugin {
 	}
 
 	checkFileExplorerIsAvailableAndPatchable(logWarning: boolean = true): FileExplorerView | undefined {
+		d.log(`checkFileExplorerIsAvailableAndPatchable`)
 		let fileExplorerView: FileExplorerView | undefined = this.getFileExplorer()
 		if (fileExplorerView
 			&& typeof fileExplorerView.createFolderDom === 'function'
@@ -195,6 +198,7 @@ export default class CustomSortPlugin extends Plugin {
 			return fileExplorerView
 		} else {
 			// Various scenarios when File Explorer was turned off (e.g. by some other plugin)
+			d.log(`this.logWarningFileExplorerNotAvailable()`)
 			if (logWarning) {
 				this.logWarningFileExplorerNotAvailable()
 			}
@@ -277,6 +281,7 @@ export default class CustomSortPlugin extends Plugin {
 	}
 
 	async onload() {
+		d.log(`onload()`)
 		console.log(`loading custom-sort v${this.manifest.version}`);
 
 		await this.loadSettings();
@@ -320,25 +325,34 @@ export default class CustomSortPlugin extends Plugin {
 		const plugin: CustomSortPlugin = this
 		const m: boolean = Platform.isMobile
 
+		d.log(`registering plugin.app.metadataCache.on("resolved"`);
 		this.registerEvent(
 			// Keep in mind: this event is triggered once after app starts and then after each modification of _any_ metadata
 			plugin.app.metadataCache.on("resolved", () => {
+				d.log(`executing plugin.app.metadataCache.on("resolved")`)
 				if (!this.settings.suspended) {
+					d.log(`RS1`)
 					if (!this.initialAutoOrManualSortingTriggered) {
+						d.log(`RS2`)
 						this.readAndParseSortingSpec()
-						this.initialAutoOrManualSortingTriggered = true
 						if (this.sortSpecCache) { // successful read of sorting specifications?
+							d.log(`RS3.1`)
 							this.showNotice('Custom sort ON')
 							const fileExplorerView: FileExplorerView | undefined = this.checkFileExplorerIsAvailableAndPatchable(false)
 							if (fileExplorerView) {
+								d.log(`RS3.1.1`)
 								setIcon(this.ribbonIconEl, ICON_SORT_ENABLED_ACTIVE)
 								fileExplorerView.requestSort()
 							} else {
+								d.log(`RS3.1.2`)
+								// Remark: in this case the File Explorer will render later on with standard Obsidian sort
+								// and a different event will be responsible for patching it and applying the custom sort
 								setIcon(this.ribbonIconEl, ICON_SORT_ENABLED_NOT_APPLIED)
 								plugin.ribbonIconStateInaccurate = true
 							}
 							this.updateStatusBar()
 						} else {
+							d.log(`RS3.2`)
 							this.settings.suspended = true
 							setIcon(this.ribbonIconEl, ICON_SORT_SUSPENDED_SYNTAX_ERROR)
 							this.saveSettings()
@@ -559,8 +573,11 @@ export default class CustomSortPlugin extends Plugin {
 	}
 
 	initialize() {
+		d.log(`initialize()`)
 		this.app.workspace.onLayoutReady(() => {
+			d.log(`onLayoutReady() => this.fileExplorerFolderPatched = this.patchFileExplorerFolder()`)
 			this.fileExplorerFolderPatched = this.patchFileExplorerFolder();
+			d.log(`onLayoutReady() => this.fileExplorerFolderPatched = ${this.fileExplorerFolderPatched}`)
 		})
 	}
 
@@ -615,6 +632,7 @@ export default class CustomSortPlugin extends Plugin {
 
 	// For the idea of monkey-patching credits go to https://github.com/nothingislost/obsidian-bartender
 	patchFileExplorerFolder(patchableFileExplorer?: FileExplorerView): boolean {
+		d.log(`patchFileExplorerFolder`)
 		let plugin = this;
 		const requestStandardObsidianSortAfter = (patchUninstaller: MonkeyAroundUninstaller|undefined) => {
 			return () => {
@@ -622,6 +640,7 @@ export default class CustomSortPlugin extends Plugin {
 
 				const fileExplorerView: FileExplorerView | undefined = this.checkFileExplorerIsAvailableAndPatchable(false)
 				if (fileExplorerView) {
+					d.log(`fileExplorerView.requestSort()`)
 					fileExplorerView.requestSort()
 				}
 			}
@@ -647,6 +666,7 @@ export default class CustomSortPlugin extends Plugin {
 							const sortingData = plugin.determineAndPrepareSortingDataForFolder(folder)
 
                             if (sortingData.sortSpec) {
+								if (folder === '/' || folder === '') d.log(`Custom custom-sort invoked for root folder (${folder})`)
                                 return getSortedFolderItems_vFrom_1_6_0.call(this, folder, sortingData.sortSpec, plugin.createProcessingContextForSorting(sortingData.sortingAndGroupingStats))
 							} else {
 								return old.call(this, ...args);
@@ -710,12 +730,14 @@ export default class CustomSortPlugin extends Plugin {
 
 	// Credits go to https://github.com/nothingislost/obsidian-bartender
 	getFileExplorer(): FileExplorerView | undefined {
+		d.log(`getFileExplorer()`)
 		let fileExplorer: FileExplorerView | undefined = this.app.workspace.getLeavesOfType("file-explorer")?.first()
 			?.view as unknown as FileExplorerView;
 		return fileExplorer;
 	}
 
 	onunload() {
+		d.log(`onunload()`)
 	}
 
 	updateStatusBar() {
