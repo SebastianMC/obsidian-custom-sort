@@ -335,6 +335,7 @@ export default class CustomSortPlugin extends Plugin {
 					if (!this.initialAutoOrManualSortingTriggered) {
 						d.log(`RS2`)
 						this.readAndParseSortingSpec()
+						this.initialAutoOrManualSortingTriggered = true
 						if (this.sortSpecCache) { // successful read of sorting specifications?
 							d.log(`RS3.1`)
 							this.showNotice('Custom sort ON')
