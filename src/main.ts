@@ -93,6 +93,9 @@ export default class CustomSortPlugin
 	sortSpecCache?: SortSpecsCollection | null
 	initialAutoOrManualSortingTriggered: boolean
 
+		// Indicator of correct hooking up the plugin-integration-point:
+	    //  - on initialization, OR
+	    //  - after explicit user actions like enabling the custom sort
 	fileExplorerFolderPatched: boolean
 
 	showNotice(message: string, timeout?: number) {
