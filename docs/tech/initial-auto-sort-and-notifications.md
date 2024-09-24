@@ -20,7 +20,7 @@ Additional remarks:
   - check it out and make sure it works correctly (gracefully, not necessarily auto-apply custom sort) 
 - in some rare cases the custom sorting can be applied successfully on start
   - keep this scenario handled correctly
-  - see #161 for the sequence of events (a) -> (b) -> (c) -> (d)
+  - see #161 for the sequence of events (a) -> (f)
 
 ## References:
 
@@ -32,3 +32,16 @@ Additional remarks:
 
 #161: Find out how to automatically apply custom sort on app start / vault (re)load etc.
 [#161](https://github.com/SebastianMC/obsidian-custom-sort/issues/161)
+
+## Design
+
+0. Before all, capture the sequences of key execution points and events (related to #161)
+
+1. Fine-grained recognition of states of involved elements:
+  - non-epmty sorting spec present or not?
+  - sorting spec parsed successfully, hence ready to be applied?
+  - File Explorer view available?
+    - patchable?
+    - lazy view?
+  - plugin load time?
+  - ...
