@@ -81,6 +81,10 @@ type MonkeyAroundUninstaller = () => void
 
 type ContextMenuProvider = (item: MenuItem) => void
 
+const cl = (executionPointName: string, comment?: string) => {
+	console.log(`c-s ep: (${executionPointName}) ${comment ? comment : ''}`)
+}
+
 export default class CustomSortPlugin
 	extends Plugin
 	implements CustomSortPluginAPI
@@ -105,6 +109,7 @@ export default class CustomSortPlugin
 	}
 
 	readAndParseSortingSpec() {
+		cl('d pre-1', 'entered readAndParseSortingSpec()')
 		const mCache: MetadataCache = this.app.metadataCache
 		let failed: boolean = false
 		let anySortingSpecFound: boolean = false
@@ -167,12 +172,14 @@ export default class CustomSortPlugin
 
 		if (this.sortSpecCache) {
 			this.showNotice(`Parsing custom sorting specification SUCCEEDED!`)
+			cl('d', 'notify: Parsing custom sorting specification SUCCEEDED!')
 		} else {
 			if (anySortingSpecFound) {
 				errorMessage = errorMessage ? errorMessage : `No valid '${SORTINGSPEC_YAML_KEY}:' key(s) in YAML front matter or multiline YAML indentation error or general YAML syntax error`
 			} else {
 				errorMessage = `No custom sorting specification found or only empty specification(s)`
 			}
+			cl('d', 'failed')
 			this.showNotice(`Parsing custom sorting specification FAILED. Suspending the plugin.\n${errorMessage}`, ERROR_NOTICE_TIMEOUT)
 			this.settings.suspended = true
 			this.saveSettings()
@@ -180,15 +187,20 @@ export default class CustomSortPlugin
 	}
 
 	checkFileExplorerIsAvailableAndPatchable(logWarning: boolean = true): FileExplorerView | undefined {
+		cl('a pre-1', 'entered checkFileExplorerIsAvailableAndPatchable()')
 		let fileExplorerView: FileExplorerView | undefined = this.getFileExplorer()
+		cl('a pre-2', `this.getFileExplorer ${fileExplorerView ? 'ok' : 'undefined'}`)
 		if (fileExplorerView && typeof fileExplorerView.requestSort === 'function') {
+			cl('a pre-3', 'has requestSort()')
 			// The plugin integration points changed with Obsidian 1.6.0 hence the patchability-check should also be Obsidian version aware
 			if (requireApiVersion && requireApiVersion("1.6.0")) {
 				if (typeof fileExplorerView.getSortedFolderItems === 'function') {
+					cl('a', '1.6.0+ and has getSortedFolderItems()')
 					return fileExplorerView
 				}
 			} else { // Obsidian versions prior to 1.6.0
 				if (typeof fileExplorerView.createFolderDom === 'function') {
+					cl('a', '<1.6.0 and has createFolderDom()')
 					return fileExplorerView
 				}
 			}
@@ -197,6 +209,7 @@ export default class CustomSortPlugin
 		if (logWarning) {
 			this.logWarningFileExplorerNotAvailable()
 		}
+		cl('a', 'failed')
 		return undefined
 	}
 
@@ -321,6 +334,7 @@ export default class CustomSortPlugin
 		this.registerEvent(
 			// Keep in mind: this event is triggered once after app starts and then after each modification of _any_ metadata
 			plugin.app.metadataCache.on("resolved", () => {
+				cl('c', 'app metadataCache populated by Obsidian')
 				if (!this.settings.suspended) {
 					if (!this.initialAutoOrManualSortingTriggered) {
 						this.readAndParseSortingSpec()
@@ -634,6 +648,8 @@ export default class CustomSortPlugin
 			}
 		}
 
+		cl('b pre-1', 'entered patchFileExplorerFolder()')
+
 		// patching file explorer might fail here because of various non-error reasons.
 		// That's why not showing and not logging error message here
 		patchableFileExplorer = patchableFileExplorer ?? this.checkFileExplorerIsAvailableAndPatchable(false)
@@ -642,7 +658,9 @@ export default class CustomSortPlugin
 				// Starting from Obsidian 1.6.0 the sorting mechanics has been significantly refactored internally in Obsidian
 				const uninstallerOfFolderSortFunctionWrapper: MonkeyAroundUninstaller = around(patchableFileExplorer.constructor.prototype, {
 					getSortedFolderItems(old: any) {
+						cl('f pre-1', 'patched getSortedFolderItems factory!')
                         return function (...args: any[]) {
+							cl('f', 'patched getSortedFolderItems invoked!')
                             // quick check for plugin status
                             if (plugin.settings.suspended) {
                                 return old.call(this, ...args);
@@ -662,6 +680,7 @@ export default class CustomSortPlugin
 					}
 				})
 				this.register(requestStandardObsidianSortAfter(uninstallerOfFolderSortFunctionWrapper))
+				cl('b', '1.6.0+ and patched getSortedFolderItems()')
 				return true
 			} else {
 				// Up to Obsidian 1.6.0
@@ -670,7 +689,9 @@ export default class CustomSortPlugin
 				let Folder = patchableFileExplorer.createFolderDom(tmpFolder).constructor;
 				const uninstallerOfFolderSortFunctionWrapper: MonkeyAroundUninstaller = around(Folder.prototype, {
 					sort(old: any) {
+						cl('f pre-1', 'patched sort factory!')
 						return function (...args: any[]) {
+							cl('f', 'patched sort invoked!')
 							// quick check for plugin status
 							if (plugin.settings.suspended) {
 								return old.call(this, ...args);
@@ -690,9 +711,11 @@ export default class CustomSortPlugin
 					}
 				})
 				this.register(requestStandardObsidianSortAfter(uninstallerOfFolderSortFunctionWrapper))
+				cl('b', '<1.6.0 and patched sort() on Folder thanks to createFolderDom()')
 				return true
 			}
 		} else {
+			cl('b', 'failed')
 			return false
 		}
 	}
