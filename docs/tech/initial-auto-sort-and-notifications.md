@@ -7,14 +7,6 @@
   and attempting to do so ends up with an error
 - there are more challenges when attempting to apply the custom sorting automatically on start
 
-An idea of solution, not ideal, but acceptable at glance:
-- simplify the logic of notifications - only show when successful
-- introduce a new popup "Custom sorting was not applied automatically, apply now?"
-  - only when it was enabled, only when the File Explorer view is visible
-  - allow to disable this popup in settings (or via a checkbox "don't show it again")
-- introduce a new popup "File Explorer view is not visible, cannot apply custom sort"
-  - only when the user explicitly attempts to apply custom sort 
-
 Additional remarks:
 - [Brian Ray](https://github.com/bray) mentions a Lazy Plugin loader in #163
   - check it out and make sure it works correctly (gracefully, not necessarily auto-apply custom sort) 
@@ -44,26 +36,45 @@ The metadataCache-resolved event becomes very problematic and thus useless. At t
 implementation of the plugin relies on it heavily
 
 Scenarios under consideration:
+
 (1a) optimistic scenario of auto-sorting on start on the first display of File Explorer.
   - theoretically can happen, never observed on 1.7.2
   - metadataCache-resolved event is ignored in this scenario
   - UX is excellent
+
 (1b) optimistic scenario of auto-sorting on start in response to metadataCache-resolved event
   - happens on desktop as the most frequent one
   - metadataCache-resolved event is triggering the custom sort almost immediately
   - UX also good, File Explorer appears with custom sorting, even if technically the std sorting was applied
   - on mobile the long-taking 'Obsidian is indexing your vault' can prevent the custom sort from being applied quickly
-(2) the delayed scenario, e.g. Lazy Plugin Loader or for whatever reason
+
+(2a) the delayed scenario via Lazy Plugin Loader
   - happens with Lazy Plugin Loader, by definition
-  - can happen in regular cases when there a many plugins, slow machine or a large vault
   - metadataCache-resolved event is never raised for the plugin until an explicit edit made by user
-  - File Explorer appears in std order, then is reloaded with custom order
+  - Lazy Plugin Loader literally invokes the 'plugin enable' Obsidian logic to start the plugin
+  - File Explorer appears in std order
+
+(2b) the delayed scenario for whatever reason except Lazy Plugin Loader
+- can happen in regular cases when there a many plugins, slow machine or a large vault
+  or on mobile when Obsidian performs the long-taking (re)indexing of vault
+- metadataCache-resolved event is normally raised for the plugin as part of startup sequence
+- File Explorer appears in std order, then is reloaded with custom order
+
+(3) File Explorer view is not visible on start (a lazy view in 1.7.2)
+- nothing can be done to handle this correctly
+- maybe there is a way to hook up to the event "File Explorer lazy view is turning into a visible regular view"
 
 Conclusions based on the above scenarios:
-- the metadataCache-resolved event can be useful for (1b) both for quick and very delayed metadata cache population (e.g. on mobile) 
+- the metadataCache-resolved event can be useful for both for quick and very delayed metadata cache population (e.g. on mobile) 
   - detection of the scenario can be tricky: only first execution, not trigger heavy processing when unprepared
   - relating to onLayoutReady could be helpful (do nothing before that)
-- for (2) introduce a delayed checker of was-sorting-applied, e.g. every second, repeated N times (e.g. N=3) to support large vaults on slower devices
+- for Lazy Plugin Loader introduce a delayed checker of was-sorting-applied, e.g. every second, repeated N times (e.g. N=3)
+  to support large vaults on slower devices
+- rewrite the involved code for clarity, for now there is a lot of legacy duplicated pieces of logic
+  which makes it hard to determine what is executed when
+- focus on supporting 1.7.2, test the recent public 1.6.7 (?)
+- ignore backward compatibility with <1.6.7 (don't break it intentionally, just don't test)
+- for (3) as already stated directly under (3)
 
 ---
 Log
