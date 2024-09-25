@@ -37,16 +37,33 @@ Additional remarks:
 
 Before all, capture the sequences of key execution points and events (related to #161)
 
-Log below shows some unexpected edge cases and sequences of events, e.g. Lazy Plugin Loader, when
-  the metadata-cache-populated event never reaches the plugin
+Logs below show some unexpected edge cases and sequences of events, e.g. Lazy Plugin Loader, when
+  the metadataCache-resolved event never reaches the plugin
 
-Is it possible / feasible to both:
-- handle the optimistic scenario of auto-sorting on start on the first display of File Explorer? AND
-- gracefully handle the delayed scenario, e.g. Lazy Plugin Loader or for whatever reason?
+The metadataCache-resolved event becomes very problematic and thus useless. At the same current
+implementation of the plugin relies on it heavily
 
-The delayed scenario, should be handled with a popup and explicit user confirmation
-- can this scenario be indeed correctly recognised and not confused with other scenarios
-  in which the automatic sorting should not be applied?
+Scenarios under consideration:
+(1a) optimistic scenario of auto-sorting on start on the first display of File Explorer.
+  - theoretically can happen, never observed on 1.7.2
+  - metadataCache-resolved event is ignored in this scenario
+  - UX is excellent
+(1b) optimistic scenario of auto-sorting on start in response to metadataCache-resolved event
+  - happens on desktop as the most frequent one
+  - metadataCache-resolved event is triggering the custom sort almost immediately
+  - UX also good, File Explorer appears with custom sorting, even if technically the std sorting was applied
+  - on mobile the long-taking 'Obsidian is indexing your vault' can prevent the custom sort from being applied quickly
+(2) the delayed scenario, e.g. Lazy Plugin Loader or for whatever reason
+  - happens with Lazy Plugin Loader, by definition
+  - can happen in regular cases when there a many plugins, slow machine or a large vault
+  - metadataCache-resolved event is never raised for the plugin until an explicit edit made by user
+  - File Explorer appears in std order, then is reloaded with custom order
+
+Conclusions based on the above scenarios:
+- the metadataCache-resolved event can be useful for (1b) both for quick and very delayed metadata cache population (e.g. on mobile) 
+  - detection of the scenario can be tricky: only first execution, not trigger heavy processing when unprepared
+  - relating to onLayoutReady could be helpful (do nothing before that)
+- for (2) introduce a delayed checker of was-sorting-applied, e.g. every second, repeated N times (e.g. N=3) to support large vaults on slower devices
 
 ---
 Log
