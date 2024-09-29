@@ -2411,6 +2411,14 @@ npm-run-path@^4.0.1:
     "@types/codemirror" "5.60.8"
     moment "2.29.4"
 
+"obsidian-1.7.2@npm:obsidian@1.7.2":
+  version "1.7.2"
+  resolved "https://registry.yarnpkg.com/obsidian/-/obsidian-1.7.2.tgz#2d989288742ae7a65760fd87a953d1ff2a402808"
+  integrity sha512-k9hN9brdknJC+afKr5FQzDRuEFGDKbDjfCazJwpgibwCAoZNYHYV8p/s3mM8I6AsnKrPKNXf8xGuMZ4enWelZQ==
+  dependencies:
+    "@types/codemirror" "5.60.8"
+    moment "2.29.4"
+
 obsidian@^0.15.4:
   version "0.15.9"
   resolved "https://registry.yarnpkg.com/obsidian/-/obsidian-0.15.9.tgz#b6e0b566952643db6b55f7e74fbba6d7140fe4a2"

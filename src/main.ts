@@ -2,7 +2,7 @@ import {
 	apiVersion,
 	App,
 	debounce,
-	FileExplorerView,
+	FileExplorerLeaf,
 	Menu,
 	MenuItem,
 	MetadataCache,
@@ -97,6 +97,7 @@ export default class CustomSortPlugin
 
 	sortSpecCache?: SortSpecsCollection | null
 	initialAutoOrManualSortingTriggered: boolean = false
+	customSortAppliedAtLeastOnce: boolean = false
 
 	fileExplorerPatched: boolean
 
@@ -184,29 +185,54 @@ export default class CustomSortPlugin
 		}
 	}
 
-	checkFileExplorerIsAvailableAndPatchable(logWarning: boolean = true): FileExplorerView | undefined {
+	// Credits go to https://github.com/nothingislost/obsidian-bartender
+	getFileExplorer(): FileExplorerLeaf | undefined {
+		let fileExplorer: FileExplorerLeaf | undefined = this.app.workspace.getLeavesOfType("file-explorer")?.first() as FileExplorerLeaf;
+		return fileExplorer;
+	}
+
+	checkFileExplorerIsAvailableAndPatchable(logWarning: boolean = true): FileExplorerLeaf | undefined {
 		cl('a pre-1', 'entered checkFileExplorerIsAvailableAndPatchable()')
-		let fileExplorerView: FileExplorerView | undefined = this.getFileExplorer()
-		cl('a pre-2', `this.getFileExplorer ${fileExplorerView ? 'ok' : 'undefined'}`)
-		if (fileExplorerView && typeof fileExplorerView.requestSort === 'function') {
-			cl('a pre-3', 'has requestSort()')
-			// The plugin integration points changed with Obsidian 1.6.0 hence the patchability-check should also be Obsidian version aware
-			if (requireApiVersion && requireApiVersion("1.6.0")) {
-				if (typeof fileExplorerView.getSortedFolderItems === 'function') {
-					cl('a', '1.6.0+ and has getSortedFolderItems()')
-					return fileExplorerView
+		let fileExplorer: FileExplorerLeaf | undefined = this.getFileExplorer()
+		cl('a pre-2', `this.getFileExplorer ${fileExplorer ? 'ok' : 'undefined'}`)
+		if (fileExplorer) {
+			cl('has view + isDeferred', `${fileExplorer.view} ${((fileExplorer.view) as any) ?.isDeferred}`)
+		}
+		if (fileExplorer) {
+			if (fileExplorer.view) {
+				if (typeof fileExplorer.view.requestSort === 'function') {
+					cl('a pre-3', 'has requestSort()')
+					// The plugin integration points changed with Obsidian 1.6.0 hence the patchability-check should also be Obsidian version aware
+					if (requireApiVersion && requireApiVersion("1.6.0")) {
+						if (typeof fileExplorer.view?.getSortedFolderItems === 'function') {
+							cl('a', '1.6.0+ and has getSortedFolderItems()')
+							return fileExplorer
+						} else {
+							/* FOR TESTING assume blindly the view is patchable and see how it goes */
+							cl('a', '1.6.0+ and NO getSortedFolderItems()')
+							return fileExplorer
+						}
+					} else { // Obsidian versions prior to 1.6.0
+						if (typeof fileExplorer.view.createFolderDom === 'function') {
+							cl('a', '<1.6.0 and has createFolderDom()')
+							return fileExplorer
+						}
+					}
+				} else {
+					cl('checkFileExplorerIsAvailableAndPatchable', 'has no requestSort() function')
+					/* FOR TESTING assume blindly the view is patchable and see how it goes */
+					return fileExplorer
 				}
-			} else { // Obsidian versions prior to 1.6.0
-				if (typeof fileExplorerView.createFolderDom === 'function') {
-					cl('a', '<1.6.0 and has createFolderDom()')
-					return fileExplorerView
-				}
+			} else {
+				cl('checkFileExplorerIsAvailableAndPatchable', 'FileExplorerLeaf has no view')
+			}
+		} else {
+			// Various scenarios when File Explorer was turned off (e.g. by some other plugin)
+			if (logWarning) {
+				this.logWarningFileExplorerNotAvailable()
 			}
 		}
-		// Various scenarios when File Explorer was turned off (e.g. by some other plugin)
-		if (logWarning) {
-			this.logWarningFileExplorerNotAvailable()
-		}
+
 		cl('a', 'failed')
 		return undefined
 	}
@@ -219,14 +245,106 @@ export default class CustomSortPlugin
 		console.warn(msg)
 	}
 
+	// For the idea of monkey-patching credits go to https://github.com/nothingislost/obsidian-bartender
+	patchFileExplorer(patchableFileExplorer?: FileExplorerLeaf): void {
+		let plugin = this;
+		plugin.fileExplorerPatched = false
+		const requestStandardObsidianSortAfter = (patchUninstaller: MonkeyAroundUninstaller|undefined) => {
+			return () => {
+				if (patchUninstaller) patchUninstaller()
+				cl("FileExplorer patches uninstalled")
+
+				const fileExplorer: FileExplorerLeaf | undefined = this.checkFileExplorerIsAvailableAndPatchable(false)
+				if (fileExplorer && fileExplorer.view) {
+					fileExplorer.view.requestSort?.()
+				}
+			}
+		}
+
+		cl('b pre-1', 'entered patchFileExplorerFolder()')
+
+		// patching file explorer might fail here because of various non-error reasons.
+		// That's why not showing and not logging error message here
+		patchableFileExplorer = patchableFileExplorer ?? this.checkFileExplorerIsAvailableAndPatchable(false)
+		if (patchableFileExplorer && patchableFileExplorer.view) {
+			if (requireApiVersion && requireApiVersion("1.6.0")) {
+				// Starting from Obsidian 1.6.0 the sorting mechanics has been significantly refactored internally in Obsidian
+				const uninstallerOfFolderSortFunctionWrapper: MonkeyAroundUninstaller = around(patchableFileExplorer.view.constructor.prototype, {
+					getSortedFolderItems(old: any) {
+						cl('f pre-1', 'patched getSortedFolderItems factory!')
+						return function (...args: any[]) {
+							cl('f', `patched getSortedFolderItems invoked with ${plugin.settings.suspended ? 'std' : 'custom'}!`)
+							// quick check for plugin status
+							if (plugin.settings.suspended) {
+								return old.call(this, ...args);
+							}
+
+							plugin.resetIconInaccurateStateToEnabled()
+
+							const folder = args[0]
+							const sortingData = plugin.determineAndPrepareSortingDataForFolder(folder)
+
+							if (sortingData.sortSpec) {
+								cl('f', `patched getSortedFolderItems invoked with custom and applied!`)
+								plugin.customSortAppliedAtLeastOnce = true
+								return getSortedFolderItems_vFrom_1_6_0.call(this, folder, sortingData.sortSpec, plugin.createProcessingContextForSorting(sortingData.sortingAndGroupingStats))
+							} else {
+								return old.call(this, ...args);
+							}
+						};
+					}
+				})
+				this.register(requestStandardObsidianSortAfter(uninstallerOfFolderSortFunctionWrapper))
+				cl('b', '1.6.0+ and patched getSortedFolderItems()')
+				plugin.fileExplorerPatched = true
+			} else {
+				// Up to Obsidian 1.6.0
+				// @ts-ignore
+				let tmpFolder = new TFolder(Vault, "");
+				let Folder = patchableFileExplorer.view.createFolderDom(tmpFolder).constructor;
+				if (Folder) {
+					const uninstallerOfFolderSortFunctionWrapper: MonkeyAroundUninstaller = around(Folder.prototype, {
+						sort(old: any) {
+							cl('f pre-1', 'patched sort factory!')
+							return function (...args: any[]) {
+								cl('f', 'patched sort invoked!')
+								// quick check for plugin status
+								if (plugin.settings.suspended) {
+									return old.call(this, ...args);
+								}
+
+								plugin.resetIconInaccurateStateToEnabled()
+
+								const folder: TFolder = this.file
+								const sortingData = plugin.determineAndPrepareSortingDataForFolder(folder)
+
+								if (sortingData.sortSpec) {
+									plugin.customSortAppliedAtLeastOnce = true
+									return folderSort_vUpTo_1_6_0.call(this, sortingData.sortSpec, plugin.createProcessingContextForSorting(sortingData.sortingAndGroupingStats));
+								} else {
+									return old.call(this, ...args);
+								}
+							};
+						}
+					})
+					this.register(requestStandardObsidianSortAfter(uninstallerOfFolderSortFunctionWrapper))
+					cl('b', '<1.6.0 and patched sort() on Folder thanks to createFolderDom()')
+					plugin.fileExplorerPatched = true
+				}
+			}
+		} else {
+			cl('b', 'failed')
+		}
+	}
+
 	// Safe to suspend when suspended and re-enable when enabled
 	switchPluginStateTo(enabled: boolean, updateRibbonBtnIcon: boolean = true) {
-		let fileExplorerView: FileExplorerView | undefined = this.checkFileExplorerIsAvailableAndPatchable()
-		if (fileExplorerView && !this.fileExplorerPatched) {
-			this.patchFileExplorer(fileExplorerView);
+		let fileExplorer: FileExplorerLeaf | undefined = this.checkFileExplorerIsAvailableAndPatchable()
+		if (fileExplorer && !this.fileExplorerPatched) {
+			this.patchFileExplorer(fileExplorer);
 
 			if (!this.fileExplorerPatched) {
-				fileExplorerView = undefined
+				fileExplorer = undefined
 			}
 		}
 		this.settings.suspended = !enabled;
@@ -239,7 +357,7 @@ export default class CustomSortPlugin
 		} else {
 			this.readAndParseSortingSpec();
 			if (this.sortSpecCache) {
-				if (fileExplorerView) {
+				if (fileExplorer) {
 					this.showNotice('Custom sort ON');
 					iconToSet = ICON_SORT_ENABLED_ACTIVE
 				} else {
@@ -261,11 +379,11 @@ export default class CustomSortPlugin
 			getBookmarksPlugin(this.app, this.settings.bookmarksGroupToConsumeAsOrderingReference, ForceFlushCache)
 		}
 
-		if (fileExplorerView) {
+		if (fileExplorer) {
 			if (this.fileExplorerPatched) {
 				cl('trued via switchPluginState')
 				this.initialAutoOrManualSortingTriggered = true
-				fileExplorerView.requestSort();
+				fileExplorer?.view?.requestSort();
 			}
 		} else {
 			if (iconToSet === ICON_SORT_ENABLED_ACTIVE) {
@@ -339,19 +457,19 @@ export default class CustomSortPlugin
 						this.readAndParseSortingSpec()
 						if (this.sortSpecCache) { // successful read of sorting specifications?
 							this.showNotice('Custom sort ON')
-							let fileExplorerView: FileExplorerView | undefined = this.checkFileExplorerIsAvailableAndPatchable(false)
-							if (fileExplorerView && !this.fileExplorerPatched) {
-								this.patchFileExplorer(fileExplorerView);
+							let fileExplorer: FileExplorerLeaf | undefined = this.checkFileExplorerIsAvailableAndPatchable(false)
+							if (fileExplorer && !this.fileExplorerPatched) {
+								this.patchFileExplorer(fileExplorer);
 
 								if (!this.fileExplorerPatched) {
-									fileExplorerView = undefined
+									fileExplorer = undefined
 								}
 							}
-							if (fileExplorerView) {
+							if (fileExplorer) {
 								setIcon(this.ribbonIconEl, ICON_SORT_ENABLED_ACTIVE)
 								cl('trued via on metadataCache')
 								this.initialAutoOrManualSortingTriggered = true
-								fileExplorerView.requestSort()
+								fileExplorer.view?.requestSort()
 							} else {
 								// Remark: in this case the File Explorer will render later on with standard Obsidian sort
 								// and a different event will be responsible for patching it and applying the custom sort
@@ -637,99 +755,12 @@ export default class CustomSortPlugin
 		}
 	}
 
-	// For the idea of monkey-patching credits go to https://github.com/nothingislost/obsidian-bartender
-	patchFileExplorer(patchableFileExplorer?: FileExplorerView): void {
-		let plugin = this;
-		plugin.fileExplorerPatched = false
-		const requestStandardObsidianSortAfter = (patchUninstaller: MonkeyAroundUninstaller|undefined) => {
-			return () => {
-				if (patchUninstaller) patchUninstaller()
-
-				const fileExplorerView: FileExplorerView | undefined = this.checkFileExplorerIsAvailableAndPatchable(false)
-				if (fileExplorerView) {
-					fileExplorerView.requestSort()
-				}
-			}
-		}
-
-		cl('b pre-1', 'entered patchFileExplorerFolder()')
-
-		// patching file explorer might fail here because of various non-error reasons.
-		// That's why not showing and not logging error message here
-		patchableFileExplorer = patchableFileExplorer ?? this.checkFileExplorerIsAvailableAndPatchable(false)
-		if (patchableFileExplorer) {
-			if (requireApiVersion && requireApiVersion("1.6.0")) {
-				// Starting from Obsidian 1.6.0 the sorting mechanics has been significantly refactored internally in Obsidian
-				const uninstallerOfFolderSortFunctionWrapper: MonkeyAroundUninstaller = around(patchableFileExplorer.constructor.prototype, {
-					getSortedFolderItems(old: any) {
-						cl('f pre-1', 'patched getSortedFolderItems factory!')
-                        return function (...args: any[]) {
-							cl('f', `patched getSortedFolderItems invoked with ${plugin.settings.suspended ? 'std' : 'custom'}!`)
-                            // quick check for plugin status
-                            if (plugin.settings.suspended) {
-                                return old.call(this, ...args);
-                            }
-
-                            plugin.resetIconInaccurateStateToEnabled()
-
-							const folder = args[0]
-							const sortingData = plugin.determineAndPrepareSortingDataForFolder(folder)
-
-                            if (sortingData.sortSpec) {
-								cl('f', `patched getSortedFolderItems invoked with custom and applied!`)
-                                return getSortedFolderItems_vFrom_1_6_0.call(this, folder, sortingData.sortSpec, plugin.createProcessingContextForSorting(sortingData.sortingAndGroupingStats))
-							} else {
-								return old.call(this, ...args);
-							}
-						};
-					}
-				})
-				this.register(requestStandardObsidianSortAfter(uninstallerOfFolderSortFunctionWrapper))
-				cl('b', '1.6.0+ and patched getSortedFolderItems()')
-				plugin.fileExplorerPatched = true
-			} else {
-				// Up to Obsidian 1.6.0
-				// @ts-ignore
-				let tmpFolder = new TFolder(Vault, "");
-				let Folder = patchableFileExplorer.createFolderDom(tmpFolder).constructor;
-				const uninstallerOfFolderSortFunctionWrapper: MonkeyAroundUninstaller = around(Folder.prototype, {
-					sort(old: any) {
-						cl('f pre-1', 'patched sort factory!')
-						return function (...args: any[]) {
-							cl('f', 'patched sort invoked!')
-							// quick check for plugin status
-							if (plugin.settings.suspended) {
-								return old.call(this, ...args);
-							}
-
-							plugin.resetIconInaccurateStateToEnabled()
-
-							const folder: TFolder = this.file
-							const sortingData = plugin.determineAndPrepareSortingDataForFolder(folder)
-
-							if (sortingData.sortSpec) {
-								return folderSort_vUpTo_1_6_0.call(this, sortingData.sortSpec, plugin.createProcessingContextForSorting(sortingData.sortingAndGroupingStats));
-							} else {
-								return old.call(this, ...args);
-							}
-						};
-					}
-				})
-				this.register(requestStandardObsidianSortAfter(uninstallerOfFolderSortFunctionWrapper))
-				cl('b', '<1.6.0 and patched sort() on Folder thanks to createFolderDom()')
-				plugin.fileExplorerPatched = true
-			}
-		} else {
-			cl('b', 'failed')
-		}
-	}
-
 	orderedFolderItemsForBookmarking(folder: TFolder, bookmarksPlugin: BookmarksPluginInterface): Array<TAbstractFile> {
 		let sortSpec: CustomSortSpec | null | undefined = undefined
 		if (!this.settings.suspended) {
 			sortSpec = this.determineSortSpecForFolder(folder.path, folder.name)
 		}
-		let uiSortOrder: string = this.getFileExplorer()?.sortOrder || ObsidianStandardDefaultSortingName
+		let uiSortOrder: string = this.getFileExplorer()?.view?.sortOrder || ObsidianStandardDefaultSortingName
 
 		const has: HasSortingOrGrouping = collectSortingAndGroupingTypes(sortSpec)
 
@@ -742,14 +773,12 @@ export default class CustomSortPlugin
 		)
 	}
 
-	// Credits go to https://github.com/nothingislost/obsidian-bartender
-	getFileExplorer(): FileExplorerView | undefined {
-		let fileExplorer: FileExplorerView | undefined = this.app.workspace.getLeavesOfType("file-explorer")?.first()
-			?.view as unknown as FileExplorerView;
-		return fileExplorer;
+	onunload() {
+		cl('onunload() invoked')
 	}
 
-	onunload() {
+	onUserEnable() {
+		cl('onUserEnable() invoked')
 	}
 
 	updateStatusBar() {
@@ -775,13 +804,21 @@ export default class CustomSortPlugin
 		// should be applied? yes (based on settings)
 		const shouldSortingBeApplied = !this.settings.suspended
 
-		// has been applied? no (based on status)
-		const hasSortingBeenApplied1 = this.initialAutoOrManualSortingTriggered
-		const hasSortingBeenApplied2 = !this.ribbonIconStateInaccurate
+		if (shouldSortingBeApplied) {
+			// has been applied? no (based on status)
+			const hasSortingBeenApplied1 = this.initialAutoOrManualSortingTriggered
 
-		const dododo = shouldSortingBeApplied && !hasSortingBeenApplied1 ? 'DO!!! ' : ''
+			// Is it possible that custom sort was actually applied and only ribbon is inaccurate?
+			const ribbonIconPotentiallyInaccurate = this.ribbonIconStateInaccurate
 
-		cl('delayed post-load check', `${dododo}should? ${shouldSortingBeApplied} has been? ${hasSortingBeenApplied1} ${hasSortingBeenApplied2}`)
+			const hasSortingBeenApplied3 = this.customSortAppliedAtLeastOnce
+
+			const would = !(hasSortingBeenApplied1 || ribbonIconPotentiallyInaccurate || hasSortingBeenApplied3) ? 'WOULD! ' : ''
+
+			cl('delayed post-load check', `should! ${would} was? ${hasSortingBeenApplied1} ${hasSortingBeenApplied3} icon ${ribbonIconPotentiallyInaccurate}`)
+		} else {
+			cl('delayed post-load check', 'custom sort DISABLED')
+		}
 	}
 
 	// API
