@@ -347,6 +347,10 @@ export default class CustomSortPlugin
 				fileExplorer = undefined
 			}
 		}
+		//!!! TODO: distinguish user-triggered invocations vs auto-on-start (-repeated)
+
+
+		//!!! if change then update and save, otherwise no save
 		this.settings.suspended = !enabled;
 		this.saveSettings()
 		let iconToSet: string
@@ -356,6 +360,9 @@ export default class CustomSortPlugin
 			iconToSet = ICON_SORT_SUSPENDED
 		} else {
 			this.readAndParseSortingSpec();
+			//!!! if too early, when mdata cache not populated => will return empty data
+			//!!!  and raising error in such condition is a false alarm
+			//!!!  ??? how to know if mdata cache has been populated ???
 			if (this.sortSpecCache) {
 				if (fileExplorer) {
 					this.showNotice('Custom sort ON');
@@ -701,6 +708,7 @@ export default class CustomSortPlugin
 		const plugin = this
 		this.app.workspace.onLayoutReady(() => {
 			cl('on layout ready - registering delayed')
+			cl(`on layout ready has mdata cache: ${plugin.app.metadataCache}`)
 			setTimeout(() => { plugin.delayedPostLoadCheck.apply(this) }, 1000)
 			this.patchFileExplorer();
 		})

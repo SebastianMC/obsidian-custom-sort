@@ -1,3 +1,24 @@
+## Update 2024-10-23
+
+A major simplification of the auto-sort-on-start is required, a simple and generic approach.
+Otherwise, things get too complicated to guarantee all scenarios are covered.
+
+Approach simplification:
+- the auto-sort-on-start to be invoked in a delayed way - setTimeout() idea or Obsidian's equivalent
+  - delay configurable in settings, some reliable default
+  - delay per desktop and a different one per mobile
+  - repeat-count related property
+- keep the auto-sort code in a single place, best if reuse the regular 'changeSortState' method
+  - in the method distinguish the user-triggered invocation (and show errors and notifications, etc.)
+  - for auto-triggered calls keep silent for 'no cache available/empty sort spec' errors until actually succeeded in sorting
+
+Challenges:
+- apparently there is no reliable way to check if Obsidian metadata cache has been populated
+  - thus the plugin can't distinguish the scenario 'no sorting specs found' from 'metadata cache not yet populated'
+- the metadata cache generated events are useless - more hassle than value, remove the callback
+- on mobile, population of metadata cache can take minutes, literally...
+  - maybe retain the metadata cache updated callback to handle this specific scenario???
+
 ## Challenges to address (as of 2.1.14):
 
 - the initial notifications "Custom sorting ON" and "Parsing custom sorting specification SUCCEEDED!" 
