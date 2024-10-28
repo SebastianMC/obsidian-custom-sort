@@ -1,3 +1,30 @@
+## Update 2024-10-28
+
+The conclusion is that automatic custom sorting can be applied only in a subset of 'happy path' scenarios
+The main questions are:
+- can the 'happy' scenarios be recognized in order to apply custom sort?
+- how to handle the remaining scenarios gracefully, when the custom sort can't be applied?
+  - on mobile a different approach can be taken
+  - a popup telling the user about the condition? 
+    - probably the condition can't be recognized at all
+- the development cost seems to be getting higher and higher. Maybe stick with a simple reliable
+  implementation and intentionally exclude all the complex, deferred, etc. scenarios. 
+  Tell it explicitly in the documentation. 
+
+To automatically apply custom sorting on plugin start, the following prerequisites have to be met:
+- Obsidian's metadata cache populated
+  - sorting specifications are read from there
+- File Explorer view available and populated
+  - the ordering of Files and Folders happens in File Explorer view (its underlying data model)
+
+Conditions which prevents auto-applying of custom sort:
+- vault notes metadata cache not (yet) populated by Obsidian 
+  - plugin code can't easily check this condition and distinguish it from the scenario 'no custom sorting specs defined'
+  - on mobile populating of the metadata cache by Obsidian can take a very long time (minutes) especially for vaults with large number of notes
+- the File Explorer view is not available because of the deferred views mechanism (introduced in Obsidian 1.7.2)
+  - https://docs.obsidian.md/Plugins/Guides/Understanding+deferred+views 
+  - plugin can't be notified when the lazy view becomes populated and presented, to have a chance to apply custom sorting
+
 ## Update 2024-10-23
 
 A major simplification of the auto-sort-on-start is required, a simple and generic approach.
