@@ -33,6 +33,10 @@ import {
 	MATCH_CHILDREN_2_SUFFIX,
 	NO_PRIORITY
 } from "./folder-matching-rules"
+import {
+	MDataExtractor,
+	tryParseAsMDataExtractorSpec
+} from "./mdata-extractors";
 
 interface ProcessingContext {
 	folderPath: string
@@ -112,6 +116,7 @@ interface CustomSortOrderAscDescPair {
 interface CustomSortOrderSpec {
 	order: CustomSortOrder
 	byMetadataField?: string
+	metadataFieldExtractor?: MDataExtractor
 }
 
 const MAX_SORT_LEVEL: number = 1
@@ -138,6 +143,8 @@ const OrderLiterals: { [key: string]: CustomSortOrderAscDescPair } = {
 }
 
 const OrderByMetadataLexeme: string = 'by-metadata:'
+
+const ValueExtractorLexeme: string = 'using-extractor:'
 
 const OrderLevelsSeparator: string = ','
 
@@ -1081,8 +1088,10 @@ export class SortingSpecProcessor {
 				}
 				this.ctx.currentSpec.defaultOrder = (attr.value as RecognizedOrderValue).order
 				this.ctx.currentSpec.byMetadataField = (attr.value as RecognizedOrderValue).applyToMetadataField
+				this.ctx.currentSpec.metadataFieldValueExtractor = (attr.value as RecognizedOrderValue).metadataValueExtractor
 				this.ctx.currentSpec.defaultSecondaryOrder = (attr.value as RecognizedOrderValue).secondaryOrder
 				this.ctx.currentSpec.byMetadataFieldSecondary = (attr.value as RecognizedOrderValue).secondaryApplyToMetadataField
+				this.ctx.currentSpec.metadataFieldSecondaryValueExtractor = (attr.value as RecognizedOrderValue).secondaryMetadataValueExtractor
 				return true;
 			} else if (attr.nesting > 0) { // For now only distinguishing nested (indented) and not-nested (not-indented), the depth doesn't matter
 				if (!this.ctx.currentSpec || !this.ctx.currentSpecGroup) {
@@ -1096,8 +1105,10 @@ export class SortingSpecProcessor {
 				}
 				this.ctx.currentSpecGroup.order = (attr.value as RecognizedOrderValue).order
 				this.ctx.currentSpecGroup.byMetadataField = (attr.value as RecognizedOrderValue).applyToMetadataField
+				this.ctx.currentSpecGroup.metadataFieldValueExtractor = (attr.value as RecognizedOrderValue).metadataValueExtractor
 				this.ctx.currentSpecGroup.secondaryOrder = (attr.value as RecognizedOrderValue).secondaryOrder
 				this.ctx.currentSpecGroup.byMetadataFieldSecondary = (attr.value as RecognizedOrderValue).secondaryApplyToMetadataField
+				this.ctx.currentSpecGroup.metadataFieldSecondaryValueExtractor = (attr.value as RecognizedOrderValue).secondaryMetadataValueExtractor
 				return true;
 			}
 		}
@@ -1497,10 +1508,29 @@ export class SortingSpecProcessor {
 			orderSpec = hasDirectionPostfix ? orderSpec.substring(hasDirectionPostfix.lexeme.length).trim() : orderSpec
 
 			let metadataName: string|undefined
+			let metadataExtractor: MDataExtractor|undefined
 			if (orderSpec.startsWith(OrderByMetadataLexeme)) {
 				applyToMetadata = true
-				metadataName = orderSpec.substring(OrderByMetadataLexeme.length).trim() || undefined
-				orderSpec = '' // metadataName is unparsed, consumes the remainder string, even if malformed, e.g. with infix spaces
+				const metadataNameAndOptionalExtractorSpec = orderSpec.substring(OrderByMetadataLexeme.length).trim() || undefined
+				if (metadataNameAndOptionalExtractorSpec) {
+					if (metadataNameAndOptionalExtractorSpec.indexOf(ValueExtractorLexeme) > -1) {
+						const metadataSpec = metadataNameAndOptionalExtractorSpec.split(ValueExtractorLexeme)
+						metadataName = metadataSpec.shift()?.trim()
+						const metadataExtractorSpec = metadataSpec?.shift()?.trim()
+						const hasMetadataExtractor = metadataExtractorSpec ? tryParseAsMDataExtractorSpec(metadataExtractorSpec) : undefined
+						if (hasMetadataExtractor) {
+							metadataExtractor = hasMetadataExtractor.m
+						} else {
+							return new AttrError(`${orderNameForErrorMsg} sorting order contains unrecognized value extractor: >>> ${metadataExtractorSpec} <<<`)
+						}
+						orderSpec = '' // all consumed as metadata and extractor
+					} else {
+						metadataName = metadataNameAndOptionalExtractorSpec
+						orderSpec = '' // all consumed as metadata name
+					}
+				} else {
+					orderSpec = '' // no metadata name found
+				}
 			}
 
 			// check for any superfluous text
@@ -1553,7 +1583,8 @@ export class SortingSpecProcessor {
 			}
 			sortOrderSpec[level] = {
 				order: order!,
-				byMetadataField: metadataName
+				byMetadataField: metadataName,
+				metadataFieldExtractor: metadataExtractor
 			}
 		}
 		return sortOrderSpec
@@ -1564,8 +1595,10 @@ export class SortingSpecProcessor {
 		return recognized ? (recognized instanceof AttrError ? recognized : {
 			order: recognized[0].order,
 			applyToMetadataField: recognized[0].byMetadataField,
+			metadataValueExtractor: recognized[0].metadataFieldExtractor,
 			secondaryOrder: recognized[1]?.order,
-			secondaryApplyToMetadataField: recognized[1]?.byMetadataField
+			secondaryApplyToMetadataField: recognized[1]?.byMetadataField,
+			secondaryMetadataValueExtractor: recognized[1]?.metadataFieldExtractor
 		}) : null;
 	}
 
