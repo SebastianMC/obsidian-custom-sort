@@ -1,0 +1,210 @@
+## Update 2024-10-28
+
+The conclusion is that automatic custom sorting can be applied only in a subset of 'happy path' scenarios
+The main questions are:
+- can the 'happy' scenarios be recognized in order to apply custom sort?
+- how to handle the remaining scenarios gracefully, when the custom sort can't be applied?
+  - on mobile a different approach can be taken
+  - a popup telling the user about the condition? 
+    - probably the condition can't be recognized at all
+- the development cost seems to be getting higher and higher. Maybe stick with a simple reliable
+  implementation and intentionally exclude all the complex, deferred, etc. scenarios. 
+  Tell it explicitly in the documentation. 
+
+To automatically apply custom sorting on plugin start, the following prerequisites have to be met:
+- Obsidian's metadata cache populated
+  - sorting specifications are read from there
+- File Explorer view available and populated
+  - the ordering of Files and Folders happens in File Explorer view (its underlying data model)
+
+Conditions which prevents auto-applying of custom sort:
+- vault notes metadata cache not (yet) populated by Obsidian 
+  - plugin code can't easily check this condition and distinguish it from the scenario 'no custom sorting specs defined'
+  - on mobile populating of the metadata cache by Obsidian can take a very long time (minutes) especially for vaults with large number of notes
+- the File Explorer view is not available because of the deferred views mechanism (introduced in Obsidian 1.7.2)
+  - https://docs.obsidian.md/Plugins/Guides/Understanding+deferred+views 
+  - plugin can't be notified when the lazy view becomes populated and presented, to have a chance to apply custom sorting
+
+## Update 2024-10-23
+
+A major simplification of the auto-sort-on-start is required, a simple and generic approach.
+Otherwise, things get too complicated to guarantee all scenarios are covered.
+
+Approach simplification:
+- the auto-sort-on-start to be invoked in a delayed way - setTimeout() idea or Obsidian's equivalent
+  - delay configurable in settings, some reliable default
+  - delay per desktop and a different one per mobile
+  - repeat-count related property
+- keep the auto-sort code in a single place, best if reuse the regular 'changeSortState' method
+  - in the method distinguish the user-triggered invocation (and show errors and notifications, etc.)
+  - for auto-triggered calls keep silent for 'no cache available/empty sort spec' errors until actually succeeded in sorting
+
+Challenges:
+- apparently there is no reliable way to check if Obsidian metadata cache has been populated
+  - thus the plugin can't distinguish the scenario 'no sorting specs found' from 'metadata cache not yet populated'
+- the metadata cache generated events are useless - more hassle than value, remove the callback
+- on mobile, population of metadata cache can take minutes, literally...
+  - maybe retain the metadata cache updated callback to handle this specific scenario???
+
+## Challenges to address (as of 2.1.14):
+
+- the initial notifications "Custom sorting ON" and "Parsing custom sorting specification SUCCEEDED!" 
+  don't reflect the actual state in some cases - the custom sorting is not applied
+- the notifications are shown more than once in some cases
+- when the File Explorer is not visible on start (1.7.2 and the lazy views) it is not possible to auto-apply custom sort
+  and attempting to do so ends up with an error
+- there are more challenges when attempting to apply the custom sorting automatically on start
+
+Additional remarks:
+- [Brian Ray](https://github.com/bray) mentions a Lazy Plugin loader in #163
+  - check it out and make sure it works correctly (gracefully, not necessarily auto-apply custom sort) 
+- in some rare cases the custom sorting can be applied successfully on start
+  - keep this scenario handled correctly
+  - see #161 for the sequence of events (a) -> (f)
+
+## References:
+
+#163: Obsidian 1.7.2 - automatic sorting fails when launching Obsidian
+[#163](https://github.com/SebastianMC/obsidian-custom-sort/issues/163)
+
+#162: Obsidian 1.7.2 breaking changes - when File Explorer is not displayed an attempt to apply custom sort fails with error
+[#162](https://github.com/SebastianMC/obsidian-custom-sort/issues/162)
+
+#161: Find out how to automatically apply custom sort on app start / vault (re)load etc.
+[#161](https://github.com/SebastianMC/obsidian-custom-sort/issues/161)
+
+## Design
+
+Before all, capture the sequences of key execution points and events (related to #161)
+
+Logs below show some unexpected edge cases and sequences of events, e.g. Lazy Plugin Loader, when
+  the metadataCache-resolved event never reaches the plugin
+
+The metadataCache-resolved event becomes very problematic and thus useless. At the same current
+implementation of the plugin relies on it heavily
+
+Scenarios under consideration:
+
+(1a) optimistic scenario of auto-sorting on start on the first display of File Explorer.
+  - theoretically can happen, never observed on 1.7.2
+  - metadataCache-resolved event is ignored in this scenario
+  - UX is excellent
+
+(1b) optimistic scenario of auto-sorting on start in response to metadataCache-resolved event
+  - happens on desktop as the most frequent one
+  - metadataCache-resolved event is triggering the custom sort almost immediately
+  - UX also good, File Explorer appears with custom sorting, even if technically the std sorting was applied
+  - on mobile the long-taking 'Obsidian is indexing your vault' can prevent the custom sort from being applied quickly
+
+(2a) the delayed scenario via Lazy Plugin Loader
+  - happens with Lazy Plugin Loader, by definition
+  - metadataCache-resolved event is never raised for the plugin until an explicit edit made by user
+  - Lazy Plugin Loader literally invokes the 'plugin enable' Obsidian logic to start the plugin
+  - File Explorer appears in std order
+
+(2b) the delayed scenario for whatever reason except Lazy Plugin Loader
+- can happen in regular cases when there a many plugins, slow machine or a large vault
+  or on mobile when Obsidian performs the long-taking (re)indexing of vault
+- metadataCache-resolved event is normally raised for the plugin as part of startup sequence
+- File Explorer appears in std order, then is reloaded with custom order
+
+(3) File Explorer view is not visible on start (a lazy view in 1.7.2)
+- nothing can be done to handle this correctly
+- maybe there is a way to hook up to the event "File Explorer lazy view is turning into a visible regular view"
+
+Conclusions based on the above scenarios:
+- the metadataCache-resolved event can be useful for both for quick and very delayed metadata cache population (e.g. on mobile) 
+  - detection of the scenario can be tricky: only first execution, not trigger heavy processing when unprepared
+  - relating to onLayoutReady could be helpful (do nothing before that)
+- for Lazy Plugin Loader introduce a delayed checker of was-sorting-applied, e.g. every second, repeated N times (e.g. N=3)
+  to support large vaults on slower devices
+- rewrite the involved code for clarity, for now there is a lot of legacy duplicated pieces of logic
+  which makes it hard to determine what is executed when
+- focus on supporting 1.7.2, test the recent public 1.6.7 (?)
+- ignore backward compatibility with <1.6.7 (don't break it intentionally, just don't test)
+- for (3) as already stated directly under (3)
+
+---
+Log
+
+Things turn out to be trickier than I expected.
+
+Sample logs generated by current log-decorated version:
+
+```
+Scenario: File Explorer hidden on close, automatically hidden on start:
+On end: File Explorer invisible, ribbon indicated 'sorting not applied, enabled'
+c-s ep: (b pre-1) entered patchFileExplorerFolder()
+c-s ep: (a pre-1) entered checkFileExplorerIsAvailableAndPatchable()
+c-s ep: (a pre-2) this.getFileExplorer ok
+c-s ep: (a) failed
+c-s ep: (b) failed
+c-s ep: (c) app metadataCache populated by Obsidian
+c-s ep: (d pre-1) entered readAndParseSortingSpec()
+c-s ep: (d) notify: Parsing custom sorting specification SUCCEEDED!
+c-s ep: (a pre-1) entered checkFileExplorerIsAvailableAndPatchable()
+c-s ep: (a pre-2) this.getFileExplorer ok
+c-s ep: (a) failed
+```
+
+```
+Scenario: File Explorer visible and custom-sorted on close, for some reason hidden on start (a different view self-activates)
+On end: File Explorer invisible, ribbon indicated 'sorting applied correctly'
+
+c-s ep: (b pre-1) entered patchFileExplorerFolder()
+c-s ep: (a pre-1) entered checkFileExplorerIsAvailableAndPatchable()
+c-s ep: (a pre-2) this.getFileExplorer ok
+c-s ep: (a pre-3) has requestSort()
+c-s ep: (a) 1.6.0+ and has getSortedFolderItems()
+c-s ep: (f pre-1) patched getSortedFolderItems factory!
+c-s ep: (b) 1.6.0+ and patched getSortedFolderItems()
+c-s ep: (c) app metadataCache populated by Obsidian
+c-s ep: (d pre-1) entered readAndParseSortingSpec()
+c-s ep: (d) notify: Parsing custom sorting specification SUCCEEDED!
+c-s ep: (a pre-1) entered checkFileExplorerIsAvailableAndPatchable()
+c-s ep: (a pre-2) this.getFileExplorer ok
+c-s ep: (a pre-3) has requestSort()
+c-s ep: (a) 1.6.0+ and has getSortedFolderItems()
+
+Then after showing File Explorer:
+
+(151x) c-s ep: (f) patched getSortedFolderItems invoked!
+c-s ep: (f) patched getSortedFolderItems invoked!
+```
+
+```
+Scenario: fully valid end-to-end: FE visible and custom-sorted, reload
+On end: File Explorer visible and sorted, ribbon indicated 'sorting applied correctly'
+
+c-s ep: (b pre-1) entered patchFileExplorerFolder()
+c-s ep: (a pre-1) entered checkFileExplorerIsAvailableAndPatchable()
+c-s ep: (a pre-2) this.getFileExplorer ok
+c-s ep: (a pre-3) has requestSort()
+c-s ep: (a) 1.6.0+ and has getSortedFolderItems()
+c-s ep: (f pre-1) patched getSortedFolderItems factory!
+c-s ep: (b) 1.6.0+ and patched getSortedFolderItems()
+c-s ep: (c) app metadataCache populated by Obsidian
+c-s ep: (d pre-1) entered readAndParseSortingSpec()
+c-s ep: (d) notify: Parsing custom sorting specification SUCCEEDED!
+c-s ep: (a pre-1) entered checkFileExplorerIsAvailableAndPatchable()
+c-s ep: (a pre-2) this.getFileExplorer ok
+c-s ep: (a pre-3) has requestSort()
+c-s ep: (a) 1.6.0+ and has getSortedFolderItems()
+(151z) c-s ep: (f) patched getSortedFolderItems invoked!
+c-s ep: (f) patched getSortedFolderItems invoked!
+(151x) c-s ep: (f) patched getSortedFolderItems invoked!
+c-s ep: (f) patched getSortedFolderItems invoked!
+```
+
+```
+Scenario: FE visible, sorting enabled, custom-sort plugin delayed via Lazy Plugin Loader
+On end: File Explorer visible and not sorted, ribbon indicates 'sorting enabled but not applied'
+
+c-s ep: (b pre-1) entered patchFileExplorerFolder()
+c-s ep: (a pre-1) entered checkFileExplorerIsAvailableAndPatchable()
+c-s ep: (a pre-2) this.getFileExplorer ok 
+c-s ep: (a pre-3) has requestSort()
+c-s ep: (a) 1.6.0+ and has getSortedFolderItems()
+c-s ep: (f pre-1) patched getSortedFolderItems factory!
+c-s ep: (b) 1.6.0+ and patched getSortedFolderItems()
+```
