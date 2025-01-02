@@ -188,6 +188,10 @@ export default class CustomSortPlugin
 	// Credits go to https://github.com/nothingislost/obsidian-bartender
 	getFileExplorer(): FileExplorerLeaf | undefined {
 		let fileExplorer: FileExplorerLeaf | undefined = this.app.workspace.getLeavesOfType("file-explorer")?.first() as FileExplorerLeaf;
+		if (fileExplorer && fileExplorer.isDeferred) {
+			cl('File Explorer available but deferred - not returning it.')
+			return undefined
+		}
 		return fileExplorer;
 	}
 

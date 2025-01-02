@@ -63,6 +63,7 @@ declare module 'obsidian' {
 
 	export interface FileExplorerLeaf extends WorkspaceLeaf {
 		view: FileExplorerView
+		get isDeferred(): boolean  // since Obsidian 1.7.2
 	}
 
 	interface MenuItem {
