@@ -51,6 +51,7 @@ import {
 	NO_PRIORITY
 } from "./folder-matching-rules"
 import {MDataExtractor, tryParseAsMDataExtractorSpec} from "./mdata-extractors";
+import {MDataMatcher, tryParseAsMDataMatcherSpec} from "./mdata-matchers";
 
 interface ProcessingContext {
 	folderPath: string
@@ -103,7 +104,8 @@ export enum ProblemCode {
 	InlineRegexInPrefixAndSuffix,
 	DuplicateByNameSortSpecForFolder,
 	EmptyFolderNameToMatch,
-	InvalidOrEmptyFolderMatchingRegexp
+	InvalidOrEmptyFolderMatchingRegexp,
+	UnrecognizedMetadataValueMatcher
 }
 
 const ContextFreeProblems = new Set<ProblemCode>([
@@ -279,6 +281,8 @@ const HideItemShortLexeme: string = '--%'  // See % as a combination of / and :
 const HideItemVerboseLexeme: string = '/--hide:'
 
 const MetadataFieldIndicatorLexeme: string = 'with-metadata:'
+
+const ValueMatcherLexeme: string = 'matching:'
 
 const BookmarkedItemIndicatorLexeme: string = 'bookmarked:'
 
@@ -900,6 +904,8 @@ class AttrError {
 }
 
 // Simplistic
+// TODO: accept spaces in the name, as already done for the parsing related to extractors for by-metadata
+// TODO: update unit tests with metadata names containing spaces
 const extractIdentifier = (text: string, defaultResult?: string): string | undefined => {
 	const identifier: string = text.trim().split(' ')?.[0]?.trim()
 	return identifier ? identifier : defaultResult
@@ -1765,13 +1771,29 @@ export class SortingSpecProcessor {
 				}               									    // theoretically could match the sorting of matched files
 			} else {
 				if (theOnly.startsWith(MetadataFieldIndicatorLexeme)) {
-					const metadataFieldName: string | undefined = extractIdentifier(
-						theOnly.substring(MetadataFieldIndicatorLexeme.length),
-						DEFAULT_METADATA_FIELD_FOR_SORTING
-					)
+					let metadataFieldName: string|undefined = ''
+					let metadataMatcher: MDataMatcher|undefined = undefined
+					const metadataNameAndOptionalMatcherSpec = theOnly.substring(MetadataFieldIndicatorLexeme.length).trim() || undefined
+					if (metadataNameAndOptionalMatcherSpec) {
+						if (metadataNameAndOptionalMatcherSpec.indexOf(ValueMatcherLexeme) > -1) {
+							const metadataSpec = metadataNameAndOptionalMatcherSpec.split(ValueMatcherLexeme)
+							metadataFieldName = metadataSpec.shift()?.trim()
+							const metadataMatcherSpec = metadataSpec?.shift()?.trim()
+							const hasMetadataMatcher = metadataMatcherSpec ? tryParseAsMDataMatcherSpec(metadataMatcherSpec) : undefined
+							if (hasMetadataMatcher) {
+								metadataMatcher = hasMetadataMatcher.m
+							} else {
+								this.problem(ProblemCode.UnrecognizedMetadataValueMatcher, "unrecognized metadata value matcher specification")
+								return null;
+							}
+						} else {
+							metadataFieldName = metadataNameAndOptionalMatcherSpec
+						}
+					}
 					return {
 						type: CustomSortGroupType.HasMetadataField,
-						withMetadataFieldName: metadataFieldName,
+						withMetadataFieldName: metadataFieldName || DEFAULT_METADATA_FIELD_FOR_SORTING,
+						withMetadataMatcher: metadataMatcher,
 						filesOnly: spec.filesOnly,
 						foldersOnly: spec.foldersOnly,
 						matchFilenameWithExt: spec.matchFilenameWithExt
