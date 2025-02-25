@@ -1783,7 +1783,7 @@ export class SortingSpecProcessor {
 							if (hasMetadataMatcher) {
 								metadataMatcher = hasMetadataMatcher.m
 							} else {
-								this.problem(ProblemCode.UnrecognizedMetadataValueMatcher, "unrecognized metadata value matcher specification")
+								this.problem(ProblemCode.UnrecognizedMetadataValueMatcher, "unrecognized or malformed metadata value matcher specification")
 								return null;
 							}
 						} else {
