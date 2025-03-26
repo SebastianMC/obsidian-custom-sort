@@ -75,7 +75,10 @@ export class ValueConverters implements ValueConvertersAPI {
         }
         if ('string' === typeof v) {
             const v2l = v.trim().toLowerCase()
-            return (v2l === 'true' || v2l === 'yes') ? true : ((v2l === 'false' || v2l === 'no') ? false : undefined)
+            return (v2l === 'true' || v2l === 'yes' || v2l === '1')
+                ?
+                true
+                : ((v2l === 'false' || v2l === 'no' || v2l === '0') ? false : undefined)
         }
         return undefined  // We ignore metadata values of Array type
     }
