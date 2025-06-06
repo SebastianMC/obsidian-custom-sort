@@ -18,7 +18,7 @@ export interface CustomSortPluginSettings {
 
 const MILIS = 1000
 const DEFAULT_DELAY_SECONDS = 1
-const DELAY_MIN_SECONDS = 1
+const DELAY_MIN_SECONDS = 0
 const DELAY_MAX_SECONDS = 30
 const DEFAULT_DELAY = DEFAULT_DELAY_SECONDS * MILIS
 
@@ -60,10 +60,14 @@ export class CustomSortSettingTab extends PluginSettingTab {
         containerEl.empty();
 
         const delayDescr: DocumentFragment = sanitizeHTMLToDom(
-            'Seconds to wait before applying custom ordering on plugin / app start.'
+            'Number of seconds to wait before applying custom ordering on plugin / app start.'
             + '<br>'
-            + 'For large vaults or on mobile the value might need to be increased if plugin constantly fails to auto-apply'
-            + ' custom ordering on start.'
+            + 'For large vaults, multi-plugin vaults or on mobile the value might need to be increased if you encounter issues with auto-applying'
+            + ' of custom ordering on start. The delay gives Obsidian additional time to sync notes from cloud storages, to populate notes metadata caches,'
+            + ' etc.'
+            + '<br>'
+            + 'At the same time if your vault is relatively small or only used on desktop, or not synced with other copies,'
+            + ' decreasing the delay to 0 could be a safe option.'
             + '<br>'
             + `Min: ${DELAY_MIN_SECONDS} sec., max. ${DELAY_MAX_SECONDS} sec.`
         )
@@ -74,9 +78,9 @@ export class CustomSortSettingTab extends PluginSettingTab {
             .addText(text => text
                 .setValue(`${this.plugin.settings.delayForInitialApplication/MILIS}`)
                 .onChange(async (value) => {
-                    let delayS = parseInt(value, 10)
-                    delayS = Number.isNaN(delayS) ? DEFAULT_DELAY_SECONDS : (delayS < DELAY_MIN_SECONDS ? DELAY_MIN_SECONDS :(delayS > DELAY_MAX_SECONDS ? DELAY_MAX_SECONDS : delayS))
-                    delayS = Math.round(delayS)
+                    let delayS = parseFloat(value)
+                    delayS = (Number.isNaN(delayS) || !Number.isFinite((delayS))) ? DEFAULT_DELAY_SECONDS : (delayS < DELAY_MIN_SECONDS ? DELAY_MIN_SECONDS :(delayS > DELAY_MAX_SECONDS ? DELAY_MAX_SECONDS : delayS))
+                    delayS = Math.round(delayS*10) / 10  // allow values like 0.2
                     this.plugin.settings.delayForInitialApplication = delayS * MILIS
                     await this.plugin.saveSettings()
                 }))
@@ -110,7 +114,7 @@ export class CustomSortSettingTab extends PluginSettingTab {
             + ' The `.md` filename suffix is optional.'
             + '<br>'
             + 'This will tell the plugin to read sorting specs and also folders metadata from these files.'
-            + '<br></br>'
+            + '<br>'
             + 'The <i>Inside Folder, with Same Name Recommended</i> mode of Folder Notes is handled automatically, no additional configuration needed.'
             + '</p>'
             + '<p>NOTE: After updating this setting remember to refresh the custom sorting via clicking on the ribbon icon or via the <b>sort-on</b> command'
