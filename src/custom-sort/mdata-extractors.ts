@@ -7,7 +7,7 @@ type ExtractorFn = (mdataValue: string) => string|undefined
 
 interface DateExtractorSpec {
     specPattern: string|RegExp,
-    extractorFn: ExtractorFn
+    extractorFn: MDataExtractor
 }
 
 export interface MDataExtractor {
