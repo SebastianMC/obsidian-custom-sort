@@ -111,6 +111,8 @@ export class CustomSortSettingTab extends PluginSettingTab {
             + '>Aidenlx Folder Note preferences</a>'
             + ') enter here the index note name, e.g. <b>_about_</b> or <b>index</b>'
             + '<br>'
+            + ' The template {{parent-folder-name}} is supported, e.g. <b>_{{parent-folder-name}}</b>'
+            + '<br>'
             + ' The `.md` filename suffix is optional.'
             + '<br>'
             + 'This will tell the plugin to read sorting specs and also folders metadata from these files.'
@@ -125,7 +127,7 @@ export class CustomSortSettingTab extends PluginSettingTab {
             .setName('Name of index note (Folder Notes support)')
             .setDesc(indexNoteNameDescr)
             .addText(text => text
-                .setPlaceholder('e.g. _about_ or index')
+                .setPlaceholder('e.g. _about_ or index or _{{parent-folder-name}}')
                 .setValue(this.plugin.settings.indexNoteNameForFolderNotes)
                 .onChange(async (value) => {
                     this.plugin.settings.indexNoteNameForFolderNotes = value.trim() ? normalizePath(value) : '';

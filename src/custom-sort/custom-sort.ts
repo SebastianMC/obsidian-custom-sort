@@ -21,7 +21,7 @@ import {
 	RegExpSpec
 } from "./custom-sort-types";
 import {
-	isDefined
+	isDefined, resolveIndexFileName
 } from "../utils/utils";
 import {
 	expandMacros
@@ -480,7 +480,8 @@ export const determineSortingGroup = function (entry: TFile | TFolder, spec: Cus
 						if (aFolder) {
 							const indexNoteBasename = ctx?.plugin?.indexNoteBasename()
 							if (indexNoteBasename) {
-								frontMatterCache = ctx._mCache.getCache(`${entry.path}/${indexNoteBasename}.md`)?.frontmatter
+								let resolvedIndexNoteBasename = resolveIndexFileName(indexNoteBasename, entry.parent?.name||'')
+								frontMatterCache = ctx._mCache.getCache(`${entry.path}/${resolvedIndexNoteBasename}.md`)?.frontmatter
 								hasMetadata = hasMetadata || frontMatterCache?.hasOwnProperty(group.withMetadataFieldName)
 							}
 						}
@@ -567,7 +568,8 @@ export const determineSortingGroup = function (entry: TFile | TFolder, spec: Cus
 				if (aFolder) {
 					const indexNoteBasename = ctx?.plugin?.indexNoteBasename()
 					if (indexNoteBasename) {
-						prioFrontMatterCache = ctx._mCache.getCache(`${entry.path}/${indexNoteBasename}.md`)?.frontmatter
+						let resolvedIndexNoteBasename = resolveIndexFileName(indexNoteBasename, entry.parent?.name||'')
+						prioFrontMatterCache = ctx._mCache.getCache(`${entry.path}/${resolvedIndexNoteBasename}.md`)?.frontmatter
 					}
 				}
 				if (isPrimaryOrderByMetadata) metadataValueToSortBy =
