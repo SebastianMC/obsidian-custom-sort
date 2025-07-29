@@ -49,7 +49,7 @@ import {
 } from "./utils/ObsidianIconFolderPluginSignature";
 import {
 	extractBasename,
-	lastPathComponent,
+	lastPathComponent, resolveIndexFileName,
 	ValueOrError,
 } from "./utils/utils";
 import {
@@ -133,6 +133,11 @@ export default class CustomSortPlugin
 			if (file instanceof TFile) {
 				const aFile: TFile = file as TFile
 				const parent: TFolder = aFile.parent!
+				let resolvedIndexNoteNameForFolderNotes = ''
+				if (this.settings.indexNoteNameForFolderNotes) {
+					resolvedIndexNoteNameForFolderNotes = resolveIndexFileName(this.settings.indexNoteNameForFolderNotes, parent.name)
+				}
+
 				// Read sorting spec from three sources of equal priority:
 				// - files with designated predefined name
 				// - files with the same name as parent folders (aka folder notes), e.g.: References/References.md
@@ -148,8 +153,10 @@ export default class CustomSortPlugin
 					aFile.path === this.settings.additionalSortspecFile ||       // when user configured Inbox/sort.md
 					aFile.path === `${this.settings.additionalSortspecFile}.md` || // when user configured Inbox/sort
 
-					aFile.basename === this.settings.indexNoteNameForFolderNotes ||   // when user configured as index
-					aFile.name === this.settings.indexNoteNameForFolderNotes          // when user configured as index.md
+					(resolvedIndexNoteNameForFolderNotes && (
+					aFile.basename === resolvedIndexNoteNameForFolderNotes ||   // when user configured as index
+					aFile.name === resolvedIndexNoteNameForFolderNotes          // when user configured as index.md
+					))
 				) {
 					const sortingSpecTxt: string|undefined = mCache.getCache(aFile.path)?.frontmatter?.[SORTINGSPEC_YAML_KEY]
 					// Warning: newer Obsidian versions can return objects as well, hence the explicit check for string value

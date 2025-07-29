@@ -25,6 +25,14 @@ export function extractBasename (configEntry: string | undefined): string | unde
 	}
 }
 
+export function resolveIndexFileName(indexFileName: string, parentFolderName: string): string {
+	if (parentFolderName && parentFolderName !== '/') {
+		return indexFileName.replace('{{parent-folder-name}}', parentFolderName)
+	} else {
+		return indexFileName
+	}
+}
+
 export class ValueOrError<V,E> {
 	constructor(private value?: V, private error?: E) {
 		if (value) this.error = undefined
