@@ -1,5 +1,3 @@
-Obsidian versions compatibility info: [here](README-obsidian-versions-compatibility.md)
-
 > > This is a simple version of README which highlights the **basic scenario and most commonly used feature**
 >
 > The [long and much more detailed advanced-README.md is here](https://github.com/SebastianMC/obsidian-custom-sort/blob/master/docs/advanced-README.md)
