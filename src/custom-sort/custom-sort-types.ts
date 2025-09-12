@@ -61,6 +61,7 @@ export interface CustomSort {
 	order: CustomSortOrder    // mandatory
 	byMetadata?: string
 	metadataValueExtractor?: MDataExtractor
+	nullDefault?: string // fallback value for missing metadata
 }
 
 export interface RecognizedSorting {

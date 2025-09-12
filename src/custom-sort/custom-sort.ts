@@ -575,25 +575,25 @@ export const determineSortingGroup = function (entry: TFile | TFolder, spec: Cus
 						group.sorting!.byMetadata || group.withMetadataFieldName || DEFAULT_METADATA_FIELD_FOR_SORTING,
 						group.sorting!.metadataValueExtractor,
 						frontMatterCache,
-						prioFrontMatterCache)
+						prioFrontMatterCache) ?? group.sorting!.nullDefault
 				if (isSecondaryOrderByMetadata) metadataValueSecondaryToSortBy =
 					mdataValueFromFMCaches (
 						group.secondarySorting!.byMetadata || group.withMetadataFieldName || DEFAULT_METADATA_FIELD_FOR_SORTING,
 						group.secondarySorting!.metadataValueExtractor,
 						frontMatterCache,
-						prioFrontMatterCache)
+						prioFrontMatterCache) ?? group.secondarySorting!.nullDefault
 				if (isDerivedPrimaryByMetadata) metadataValueDerivedPrimaryToSortBy =
 					mdataValueFromFMCaches (
 						spec.defaultSorting!.byMetadata || DEFAULT_METADATA_FIELD_FOR_SORTING,
 						spec.defaultSorting!.metadataValueExtractor,
 						frontMatterCache,
-						prioFrontMatterCache)
+						prioFrontMatterCache) ?? spec.defaultSorting!.nullDefault
 				if (isDerivedSecondaryByMetadata) metadataValueDerivedSecondaryToSortBy =
 					mdataValueFromFMCaches (
 						spec.defaultSecondarySorting!.byMetadata || DEFAULT_METADATA_FIELD_FOR_SORTING,
 						spec.defaultSecondarySorting!.metadataValueExtractor,
 						frontMatterCache,
-						prioFrontMatterCache)
+						prioFrontMatterCache) ?? spec.defaultSecondarySorting!.nullDefault
 			}
 		}
 	}
