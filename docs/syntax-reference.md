@@ -32,6 +32,7 @@ The intention is to make it understandable to non-technical persons.
   - the YAML key `sorting-spec:` has to be used
   - because indentation matters, the recommended multiline YAML syntax is `sorting-spec: |`
     - refer to YAML syntax reference for details on how the pipe `|` character works (e.g. https://en.wikipedia.org/wiki/YAML#Basic_components)
+    - for practical notes and examples about `...` and indentation, see [wildcards.md](./wildcards.md)
 - the `sorting specification` comprises one or more [sections](#Section)
   - each `section` has to reside in a single location (a single entry in frontmatter YAML of a note)
   - multiple `sections` can exist under a single `sorting-spec: |` YAML entry, one after another

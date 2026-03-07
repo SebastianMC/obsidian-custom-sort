@@ -108,6 +108,8 @@ For clarity: the three available prefixes `/!` and `/!!` and `/!!!` allow for fu
 
 Currently, the below simple wildcard syntax is supported for sorting group:
 
+For practical notes and examples (including common `...` gotchas and indentation), see [wildcards.md](./wildcards.md).
+
 ### A single digit (exactly one)
 
 An expression like `\d` or `\[0-9]` matches a single digit (exactly one)
