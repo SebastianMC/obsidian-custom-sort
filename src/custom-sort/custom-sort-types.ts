@@ -1,4 +1,5 @@
 import {MDataExtractor} from "./mdata-extractors";
+import {MDataMatcher} from "./mdata-matchers";
 
 export enum CustomSortGroupType {
 	Outsiders, // Not belonging to any of other groups
@@ -81,6 +82,7 @@ export interface CustomSortGroup {
 	matchFilenameWithExt?: boolean
 	foldersOnly?: boolean
 	withMetadataFieldName?: string // for 'with-metadata:' grouping
+	withMetadataMatcher?: MDataMatcher // optionally can come for 'with-metadata:' grouping
 	iconName?: string // for integration with obsidian-folder-icon community plugin
 	priority?: number
 	combineWithIdx?: number

@@ -476,17 +476,24 @@ export const determineSortingGroup = function (entry: TFile | TFolder, spec: Cus
 						const notePathToScan: string = aFile ? entry.path : `${entry.path}/${entry.name}.md`
 						let frontMatterCache: FrontMatterCache | undefined = ctx._mCache.getCache(notePathToScan)?.frontmatter
 						let hasMetadata: boolean | undefined = frontMatterCache?.hasOwnProperty(group.withMetadataFieldName)
+						let metadataValue: string | undefined = hasMetadata ? frontMatterCache?.[group.withMetadataFieldName] : undefined
 						// For folders, if index-based folder note mode, scan the index file, giving it the priority
 						if (aFolder) {
 							const indexNoteBasename = ctx?.plugin?.indexNoteBasename()
 							if (indexNoteBasename) {
 								frontMatterCache = ctx._mCache.getCache(`${entry.path}/${indexNoteBasename}.md`)?.frontmatter
 								hasMetadata = hasMetadata || frontMatterCache?.hasOwnProperty(group.withMetadataFieldName)
+								metadataValue = hasMetadata ? frontMatterCache?.[group.withMetadataFieldName] : undefined
 							}
 						}
 
 						if (hasMetadata) {
-							determined = true
+							if (group.withMetadataMatcher) {
+									// note: empty metadata value doesn't match anything, by design
+								determined = !!(metadataValue && group.withMetadataMatcher(metadataValue))
+							} else {
+								determined = true
+							}
 						}
 					}
 				}
