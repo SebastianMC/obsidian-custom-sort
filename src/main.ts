@@ -65,6 +65,7 @@ import {
 	DEFAULT_SETTINGS
 } from "./settings";
 import {CustomSortPluginAPI} from "./custom-sort-plugin";
+import { UndeferHandler } from './utils/UndeferHandler';
 
 const PLUGIN_ID = 'custom-sort' // same as in manifest.json
 
@@ -230,6 +231,39 @@ export default class CustomSortPlugin
 		return fileExplorerOrError
 	}
 
+	patchFileExplorerWhenAvailable() {
+		const fileExplorerLeaf = this.app.workspace.getLeavesOfType('file-explorer')[0] as FileExplorerLeaf
+		// Called under one of these 2 conditions:
+		// - File Explorer has not been loaded yet.
+		// - File Explorer had been loaded in its defer state, but then it was closed before it had
+		//   a chance to be fully loaded.
+		const waitAndPatch = () => {
+			const patchRef = this.app.workspace.on('active-leaf-change', leaf => {
+				if (leaf?.view.getViewType() == 'file-explorer') {
+					this.patchFileExplorer(leaf as FileExplorerLeaf)
+					this.app.workspace.offref(patchRef)
+					this.app.workspace.offref(cancelRef)
+				}
+			})
+			const cancelRef = this.app.workspace.on('custom-sort:plugin-unload', () => {
+				this.app.workspace.offref(patchRef)
+				this.app.workspace.offref(cancelRef)
+			})
+		}
+
+		if (!fileExplorerLeaf) {
+			waitAndPatch()
+		} else if (fileExplorerLeaf.isDeferred) {
+			new UndeferHandler(
+				fileExplorerLeaf,
+				this.patchFileExplorer.bind(this),
+				waitAndPatch
+			)
+		} else {
+			this.patchFileExplorer(fileExplorerLeaf)
+		}
+	}
+
 	// For the idea of monkey-patching credits go to https://github.com/nothingislost/obsidian-bartender
 	patchFileExplorer(patchableFileExplorer: FileExplorerLeaf): FileExplorerLeaf|undefined {
 		let plugin = this;
@@ -250,14 +284,6 @@ export default class CustomSortPlugin
 						const sortingData = plugin.determineAndPrepareSortingDataForFolder(folder)
 
 						if (sortingData.sortSpec) {
-							if (!plugin.customSortAppliedAtLeastOnce) {
-								plugin.customSortAppliedAtLeastOnce = true
-								setTimeout(() => {
-									plugin.setRibbonIconToEnabled.apply(plugin)
-									plugin.showNotice('Custom sort APPLIED.');
-									plugin.updateStatusBar()
-								})
-							}
 							return getSortedFolderItems.call(this, folder, sortingData.sortSpec, plugin.createProcessingContextForSorting(sortingData.sortingAndGroupingStats))
 						} else {
 							return old.call(this, ...args);
@@ -265,6 +291,7 @@ export default class CustomSortPlugin
 					};
 				}
 			})
+			patchableFileExplorer.view.requestSort()
 			return patchableFileExplorer
 		} else {
 			return undefined
@@ -295,8 +322,7 @@ export default class CustomSortPlugin
 		this.settings.suspended = !enabled;
 		this.saveSettings()
 
-		let fileExplorerOrError: FileExplorerLeafOrError = this.checkFileExplorerIsAvailableAndPatchable(!this.settings.suspended)
-		const fileExplorer = fileExplorerOrError.v ? this.patchFileExplorer(fileExplorerOrError.v) : undefined
+		const fileExplorer = this.getFileExplorer().v
 
 		if (this.settings.suspended) {
 			this.showNotice('Custom sort OFF');
@@ -311,17 +337,9 @@ export default class CustomSortPlugin
 				if (fileExplorer) {
 					this.customSortAppliedAtLeastOnce = false
 					fileExplorer.view.requestSort();
-				} else {
-					if (Platform.isDesktop) {
-						this.showNotice('Custom sort File Explorer view problem. See console for detailed message.')
-					} else { // No console access on mobile
-						this.showNotice(`Custom sort File Explorer view problem - is it visible?`
-						+ ` Can't apply custom sorting when the File Explorer was not displayed at least once.`)
-					}
-					setIcon(this.ribbonIconEl, ICON_SORT_SUSPENDED_GENERAL_ERROR)
-					this.settings.suspended = true
-					this.saveSettings()
 				}
+				this.setRibbonIconToEnabled()
+				this.showNotice('Custom sort APPLIED.')
 			} else {
 				setIcon(this.ribbonIconEl, ICON_SORT_SUSPENDED_SYNTAX_ERROR)
 				this.settings.suspended = true
@@ -614,12 +632,9 @@ export default class CustomSortPlugin
 	}
 
 	initialize() {
-		const plugin = this
 		this.app.workspace.onLayoutReady(() => {
-			setTimeout(() => {
-				plugin.delayedApplicationOfCustomSorting.apply(this)
-			},
-			plugin.settings.delayForInitialApplication)
+			this.patchFileExplorerWhenAvailable()
+			this.switchPluginStateTo(!this.settings.suspended)
 		})
 	}
 
@@ -683,6 +698,8 @@ export default class CustomSortPlugin
 	}
 
 	onunload() {
+		// Trigger "plugin-unload" event
+		this.app.workspace.trigger('custom-sort:plugin-unload');
 	}
 
 	onUserEnable() {
@@ -690,7 +707,7 @@ export default class CustomSortPlugin
 
 	updateStatusBar() {
 		if (this.statusBarItemEl) {
-			let status = (!this.settings.suspended && this.customSortAppliedAtLeastOnce) ? 'ON' : 'OFF'
+			let status = !this.settings.suspended ? 'ON' : 'OFF'
 			this.statusBarItemEl.setText(`Custom sort:${status}`)
 		}
 	}

@@ -62,4 +62,9 @@ declare module 'obsidian' {
 	interface MenuItem {
 		setSubmenu: () => Menu;
 	}
+
+	interface Workspace {
+		// Augmented event, triggered after unloading the plugin
+		on(name: 'custom-sort:plugin-unload', callback: () => unknown, ctx?: any): EventRef;
+	}
 }
