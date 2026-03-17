@@ -154,6 +154,8 @@ const OrderByMetadataLexeme: string = 'by-metadata:'
 
 const ValueExtractorLexeme: string = 'using-extractor:'
 
+const NullDefaultLexeme: string = 'null-default:'
+
 const OrderLevelsSeparator: string = ','
 
 enum Attribute {
@@ -1573,9 +1575,17 @@ export class SortingSpecProcessor {
 
 			let metadataName: string|undefined
 			let metadataExtractor: MDataExtractor|undefined
+			let nullDefault: string|undefined
 			if (orderSpec.startsWith(OrderByMetadataLexeme)) {
 				applyToMetadata = true
-				const metadataNameAndOptionalExtractorSpec = orderSpec.substring(OrderByMetadataLexeme.length).trim() || undefined
+				let metadataNameAndOptionalExtractorSpec = orderSpec.substring(OrderByMetadataLexeme.length).trim() || undefined
+				
+				if (metadataNameAndOptionalExtractorSpec?.includes(NullDefaultLexeme)) {
+					const parts = metadataNameAndOptionalExtractorSpec.split(NullDefaultLexeme)
+					metadataNameAndOptionalExtractorSpec = parts[0]?.trim()
+					nullDefault = parts[1]?.trim()
+				}
+				
 				if (metadataNameAndOptionalExtractorSpec) {
 					if (metadataNameAndOptionalExtractorSpec.indexOf(ValueExtractorLexeme) > -1) {
 						const metadataSpec = metadataNameAndOptionalExtractorSpec.split(ValueExtractorLexeme)
@@ -1648,7 +1658,8 @@ export class SortingSpecProcessor {
 			sortOrderSpec[level] = {
 				order: order!,
 				byMetadata: metadataName,
-				metadataValueExtractor: metadataExtractor
+				metadataValueExtractor: metadataExtractor,
+				nullDefault: nullDefault
 			}
 		}
 		return sortOrderSpec

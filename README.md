@@ -157,6 +157,7 @@ The list of automatic sorting orders includes:
 - `vsc-unicode` or `unicode-charcode` - tricky for geeks
 - `by-metadata:` modifier to use specific metadata for sorting
 - `using-extractor:` in connection with `by-metadata:` to use only part of metadata value, for example a date in specified format
+- `null-default:` in connection with `by-metadata:` to specify fallback value for missing metadata, e.g. `a-z by-metadata: property_name null-default: 0`
 - `,` separator to specify two levels of sorting. When combining folder-level and group-level sorting this allows for up to 4 sorting levels
 - `advanced recursive modified` or `advanced recursive created` - advanced variants of `advanced modified` and `advanced created`. 
   Use with care on larger vaults because the deep scanning of folder descendants can have impact on performance on mobile devices

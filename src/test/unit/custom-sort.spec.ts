@@ -1800,6 +1800,52 @@ describe('determineSortingGroup', () => {
 				metadataFieldValue: 'direct metadata on file, under default name'
 			} as FolderItemForSorting);
 		})
+		it('should use nullDefault when metadata is missing for derived sorting', () => {
+			// given
+			const file: TFile = mockTFile('References', 'md', 111, MOCK_TIMESTAMP + 222, MOCK_TIMESTAMP + 333);
+			const sortSpec: CustomSortSpec = {
+				targetFoldersPaths: ['/'],
+				groups: [{
+					type: CustomSortGroupType.ExactPrefix,
+					exactPrefix: 'Ref',
+					sorting: { order: CustomSortOrder.alphabetical },
+				}],
+				defaultSorting: {
+					order: CustomSortOrder.byMetadataFieldAlphabetical,
+					byMetadata: 'missing-field',
+					nullDefault: 'default-value'
+				}
+			}
+			const ctx: Partial<ProcessingContext> = {
+				_mCache: {
+					getCache: function (path: string): CachedMetadata | undefined {
+						return {
+							'Some parent folder/References.md': {
+								frontmatter: {
+									// missing-field is not present
+									position: MockedLoc
+								}
+							}
+						}[path]
+					}
+				} as MetadataCache
+			}
+
+			// when
+			const result = determineSortingGroup(file, sortSpec, ctx as ProcessingContext)
+
+			// then
+			expect(result).toEqual({
+				groupIdx: 0,
+				isFolder: false,
+				sortString: "References",
+				sortStringWithExt: "References.md",
+				ctime: MOCK_TIMESTAMP + 222,
+				mtime: MOCK_TIMESTAMP + 333,
+				path: 'Some parent folder/References.md',
+				metadataFieldValueForDerived: 'default-value'  // Should use nullDefault
+			} as FolderItemForSorting);
+		})
 	})
 
 	describe('when sort by metadata is involved (specified in secondary sort, for group of for target folder)', () => {

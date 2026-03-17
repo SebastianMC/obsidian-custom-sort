@@ -576,6 +576,37 @@ const expectedSortSpecsExampleMDataExtractors2: { [key: string]: CustomSortSpec 
 	}
 }
 
+const txtInputExampleMDataNullDefault: string = `
+< a-z by-metadata: priority null-default: zzz
+/folders Chapter...
+  > a-z by-metadata: status using-extractor: date(dd/mm/yyyy) null-default: 1900-01-01
+`
+
+const expectedSortSpecsExampleMDataNullDefault: { [key: string]: CustomSortSpec } = {
+	"mock-folder": {
+		defaultSorting: {
+			order: CustomSortOrder.byMetadataFieldAlphabetical,
+			byMetadata: 'priority',
+			nullDefault: 'zzz'
+		},
+		groups: [{
+			foldersOnly: true,
+			type: CustomSortGroupType.ExactPrefix,
+			exactPrefix: 'Chapter',
+			sorting: {
+				order: CustomSortOrder.byMetadataFieldAlphabeticalReverse,
+				byMetadata: 'status',
+				metadataValueExtractor: _unitTests.extractorFnForDate_ddmmyyyy,
+				nullDefault: '1900-01-01'
+			}
+		}, {
+			type: CustomSortGroupType.Outsiders
+		}],
+		targetFoldersPaths: ['mock-folder'],
+		outsidersGroupIdx: 1
+	}
+}
+
 describe('SortingSpecProcessor', () => {
 	let processor: SortingSpecProcessor;
 	beforeEach(() => {
@@ -606,6 +637,11 @@ describe('SortingSpecProcessor', () => {
 		const result = processor.parseSortSpecFromText(inputTxtArr, 'mock-folder', 'custom-name-note.md')
 		expect(result?.sortSpecByPath).toEqual(expectedSortSpecsExampleMDataExtractors2)
 	})
+	it('should generate correct SortSpecs (example with mdata null-default)', () => {
+	const inputTxtArr: Array<string> = txtInputExampleMDataNullDefault.split('\n')
+	const result = processor.parseSortSpecFromText(inputTxtArr, 'mock-folder', 'custom-name-note.md')
+	expect(result?.sortSpecByPath).toEqual(expectedSortSpecsExampleMDataNullDefault)
+})
 })
 
 const txtInputNotDuplicatedSortSpec: string = `
