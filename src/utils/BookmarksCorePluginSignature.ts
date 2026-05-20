@@ -82,6 +82,7 @@ export interface BookmarksPluginInterface {
     saveDataAndUpdateBookmarkViews(updateBookmarkViews: boolean): void
     bookmarkSiblings(siblings: Array<TAbstractFile>, inTheTop?: boolean): void
     unbookmarkSiblings(siblings: Array<TAbstractFile>): void
+    syncSiblings(orderedSiblings: Array<TAbstractFile>): void
     updateSortingBookmarksAfterItemRenamed(renamedItem: TAbstractFile, oldPath: string): void
     updateSortingBookmarksAfterItemDeleted(deletedItem: TAbstractFile): void
     isBookmarkedForSorting(item: TAbstractFile): boolean
@@ -228,6 +229,58 @@ class BookmarksPluginWrapper implements BookmarksPluginInterface {
                 }
             });
         }
+    }
+
+    // Sync bookmarks to match the given ordered siblings exactly:
+    // - Reorder existing bookmark entries to match the order of orderedSiblings
+    // - Add missing items at their correct position
+    // - Remove orphaned entries (items in bookmarks that are not in orderedSiblings)
+    syncSiblings = (orderedSiblings: Array<TAbstractFile>) => {
+        if (orderedSiblings.length === 0) return
+
+        const bookmarksContainer: BookmarkedParentFolder|undefined = findGroupForItemPathInBookmarks(
+            orderedSiblings[0].path,
+            CreateIfMissing,
+            this.plugin!,
+            this.groupNameForSorting
+        )
+
+        if (!bookmarksContainer) return
+
+        const reordered: Array<BookmarkedItem> = []
+        const matchedItems: Set<BookmarkedItem> = new Set()
+
+        for (const aSibling of orderedSiblings) {
+            const siblingName = lastPathComponent(aSibling.path)
+
+            // Find existing bookmark entry for this sibling
+            const existing = bookmarksContainer.items.find((it) =>
+                ((it.type === 'folder' || it.type === 'file') && it.path === aSibling.path) ||
+                (it.type === 'group' && groupNameForPath(it.title||'') === siblingName)
+            )
+
+            if (existing) {
+                // If it was a group transparent for sorting, make it visible again
+                if (existing.type === 'group' && isGroupTransparentForSorting(existing.title)) {
+                    existing.title = groupNameForPath(existing.title||'')
+                }
+                reordered.push(existing)
+                matchedItems.add(existing)
+            } else {
+                // Create new entry at the correct position
+                const newEntry: BookmarkedItem = (aSibling instanceof TFolder)
+                    ? createBookmarkGroupEntry(siblingName)
+                    : createBookmarkFileEntry(aSibling.path)
+                reordered.push(newEntry)
+            }
+        }
+
+        // Remove orphaned entries: items in bookmarks that have no corresponding file/folder
+        // (they are simply not included in reordered)
+
+        // Replace the container items with the reordered list
+        bookmarksContainer.items.length = 0
+        bookmarksContainer.items.push(...reordered)
     }
 
     updateSortingBookmarksAfterItemRenamed = (renamedItem: TAbstractFile, oldPath: string): void => {

@@ -14,6 +14,7 @@ export interface CustomSortPluginSettings {
     bookmarksContextMenus: boolean
     bookmarksGroupToConsumeAsOrderingReference: string
     delayForInitialApplication: number // miliseconds
+    bookmarksSyncIntervalSeconds: number // 0 = disabled
 }
 
 const MILIS = 1000
@@ -21,6 +22,10 @@ const DEFAULT_DELAY_SECONDS = 1
 const DELAY_MIN_SECONDS = 0
 const DELAY_MAX_SECONDS = 30
 const DEFAULT_DELAY = DEFAULT_DELAY_SECONDS * MILIS
+
+const SYNC_INTERVAL_MIN_SECONDS = 0
+const SYNC_INTERVAL_MAX_SECONDS = 3600
+const DEFAULT_SYNC_INTERVAL_SECONDS = 0
 
 export const DEFAULT_SETTINGS: CustomSortPluginSettings = {
     additionalSortspecFile: '',
@@ -33,7 +38,8 @@ export const DEFAULT_SETTINGS: CustomSortPluginSettings = {
     automaticBookmarksIntegration: false,
     bookmarksContextMenus: false,
     bookmarksGroupToConsumeAsOrderingReference: 'sortspec',
-    delayForInitialApplication: DEFAULT_DELAY
+    delayForInitialApplication: DEFAULT_DELAY,
+    bookmarksSyncIntervalSeconds: DEFAULT_SYNC_INTERVAL_SECONDS
 }
 
 // On API 1.2.x+ enable the bookmarks integration by default
@@ -245,6 +251,30 @@ export class CustomSortSettingTab extends PluginSettingTab {
                         this.plugin.settings.customSortContextSubmenu = true; // automatically enable custom sort context submenu
                     }
                     await this.plugin.saveSettings();
+                }))
+
+        const bookmarksSyncIntervalDescr: DocumentFragment = sanitizeHTMLToDom(
+            'Interval in seconds for automatic synchronization of bookmarks with the file explorer order.'
+            + '<br>'
+            + 'Set to <b>0</b> to disable automatic sync (manual sync via context menu is still available).'
+            + '<br>'
+            + 'When enabled, the plugin will periodically ensure that bookmarks reflect the current file/folder structure and sorting order.'
+            + '<br>'
+            + `Min: ${SYNC_INTERVAL_MIN_SECONDS} sec., max: ${SYNC_INTERVAL_MAX_SECONDS} sec.`
+        )
+
+        new Setting(containerEl)
+            .setName('Automatic bookmarks sync interval')
+            .setDesc(bookmarksSyncIntervalDescr)
+            .addText(text => text
+                .setPlaceholder('0')
+                .setValue(`${this.plugin.settings.bookmarksSyncIntervalSeconds}`)
+                .onChange(async (value) => {
+                    let interval = parseInt(value)
+                    interval = (Number.isNaN(interval) || !Number.isFinite(interval)) ? DEFAULT_SYNC_INTERVAL_SECONDS : (interval < SYNC_INTERVAL_MIN_SECONDS ? SYNC_INTERVAL_MIN_SECONDS : (interval > SYNC_INTERVAL_MAX_SECONDS ? SYNC_INTERVAL_MAX_SECONDS : interval))
+                    this.plugin.settings.bookmarksSyncIntervalSeconds = interval
+                    await this.plugin.saveSettings()
+                    this.plugin.restartBookmarksSyncTimer()
                 }))
     }
 }
