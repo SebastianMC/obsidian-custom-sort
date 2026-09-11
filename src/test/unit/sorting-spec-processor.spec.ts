@@ -914,6 +914,50 @@ describe('SortingSpecProcessor', () => {
 	})
 })
 
+const txtInputVscUnicodeNaturalSortAttr: string = `
+target-folder: VS Code unicode natural
+%
+  > unicode-charcode-natural
+< vsc-unicode-natural
+target-folder: VS Code unicode natural reverse
+%
+  < unicode-charcode-natural
+> vsc-unicode-natural
+`
+
+const expectedSortSpecForVscUnicodeNaturalSorting: { [key: string]: CustomSortSpec } = {
+	"VS Code unicode natural": {
+		defaultSorting: { order: CustomSortOrder.vscUnicodeNatural, },
+		groups: [{
+			type: CustomSortGroupType.Outsiders,
+			sorting: { order: CustomSortOrder.vscUnicodeNaturalReverse },
+		}],
+		outsidersGroupIdx: 0,
+		targetFoldersPaths: ['VS Code unicode natural']
+	},
+	"VS Code unicode natural reverse": {
+		defaultSorting: { order: CustomSortOrder.vscUnicodeNaturalReverse, },
+		groups: [{
+			type: CustomSortGroupType.Outsiders,
+			sorting: { order: CustomSortOrder.vscUnicodeNatural },
+		}],
+		outsidersGroupIdx: 0,
+		targetFoldersPaths: ['VS Code unicode natural reverse']
+	}
+}
+
+describe('SortingSpecProcessor', () => {
+	let processor: SortingSpecProcessor;
+	beforeEach(() => {
+		processor = new SortingSpecProcessor();
+	});
+	it('should recognize the vsc-unicode-natural sorting attribute for a folder', () => {
+		const inputTxtArr: Array<string> = txtInputVscUnicodeNaturalSortAttr.split('\n')
+		const result = processor.parseSortSpecFromText(inputTxtArr, 'mock-folder', 'custom-name-note.md')
+		expect(result?.sortSpecByPath).toEqual(expectedSortSpecForVscUnicodeNaturalSorting)
+	})
+})
+
 const txtInputSimplistic1: string = `
 target-folder: /*
 /:files

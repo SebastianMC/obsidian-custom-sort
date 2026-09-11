@@ -146,6 +146,8 @@ const OrderLiterals: { [key: string]: CustomSortOrderAscDescPair } = {
     'by-bookmarks-order': {asc: CustomSortOrder.byBookmarkOrder, desc: CustomSortOrder.byBookmarkOrderReverse},
 	'files-first': {asc: CustomSortOrder.fileFirst, desc: CustomSortOrder.fileFirst},
 	'folders-first': {asc: CustomSortOrder.folderFirst, desc: CustomSortOrder.folderFirst},
+	'vsc-unicode-natural': {asc: CustomSortOrder.vscUnicodeNatural, desc: CustomSortOrder.vscUnicodeNaturalReverse},
+	'unicode-charcode-natural': {asc: CustomSortOrder.vscUnicodeNatural, desc: CustomSortOrder.vscUnicodeNaturalReverse},
 	'vsc-unicode': {asc: CustomSortOrder.vscUnicode, desc: CustomSortOrder.vscUnicodeReverse},
 	'unicode-charcode': {asc: CustomSortOrder.vscUnicode, desc: CustomSortOrder.vscUnicodeReverse}
 }

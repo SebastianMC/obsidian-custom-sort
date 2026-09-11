@@ -52,6 +52,17 @@ export const CollatorTrueAlphabeticalCompare = new Intl.Collator(undefined, {
 	numeric: false,
 }).compare;
 
+// VS Code / Windows Explorer style comparator: Intl.Collator with 'en' locale (UCA defaults)
+// - punctuation/symbols precede letters (so "[TODO]" < "CLAUDE")
+// - digit runs compared numerically (so "Part 2" < "Part 10")
+// - Latin precedes CJK (so "Part" < "부록")
+// - base sensitivity (case-insensitive, accent-insensitive)
+export const CollatorCompareVscNatural = new Intl.Collator('en', {
+	usage: "sort",
+	sensitivity: "base",
+	numeric: true,
+}).compare;
+
 export interface FolderItemForSorting {
 	path: string
 	groupIdx?: number  // the index itself represents order for groups
@@ -207,6 +218,8 @@ const Sorters: { [key in CustomSortOrder]: SorterFn } = {
 	[CustomSortOrder.folderFirst]: (a: FIFS, b: FIFS) => (a.isFolder === b.isFolder) ? EQUAL_OR_UNCOMPARABLE : (a.isFolder ? -1 : 1),
 	[CustomSortOrder.vscUnicode]: (a: FIFS, b: FIFS) => (a.sortString === b.sortString) ? EQUAL_OR_UNCOMPARABLE : (a.sortString < b.sortString ? -1 : 1),
 	[CustomSortOrder.vscUnicodeReverse]: (a: FIFS, b: FIFS) => (a.sortString === b.sortString) ? EQUAL_OR_UNCOMPARABLE : (b.sortString < a.sortString ? -1 : 1),
+	[CustomSortOrder.vscUnicodeNatural]: (a: FIFS, b: FIFS) => CollatorCompareVscNatural(a.sortStringWithExt, b.sortStringWithExt),
+	[CustomSortOrder.vscUnicodeNaturalReverse]: (a: FIFS, b: FIFS) => CollatorCompareVscNatural(b.sortStringWithExt, a.sortStringWithExt),
 
 	// A fallback entry which should not be used - the getSorterFor() function below should protect against it
 	[CustomSortOrder.standardObsidian]: (a: FIFS, b: FIFS) => CollatorCompare(a.sortString, b.sortString),
